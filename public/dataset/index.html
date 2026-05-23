@@ -64,6 +64,39 @@
         </main>
     </div>
 
+    <!-- ============ Details Modal ============ -->
+    <div class="details-backdrop" id="details-modal" hidden>
+        <button class="details-nav prev" id="details-prev" aria-label="Previous transaction" title="Previous (←)">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <button class="details-nav next" id="details-next" aria-label="Next transaction" title="Next (→)">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <div class="details-modal" id="details-modal-inner" role="dialog" aria-modal="true" aria-labelledby="details-res-id">
+            <button class="details-close" id="details-close" aria-label="Close details">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <header class="details-header">
+                <div class="details-header-col">
+                    <div class="details-header-label">Reservation ID</div>
+                    <div class="details-header-value" id="details-res-id">—</div>
+                    <div class="details-header-sub" id="details-dba"></div>
+                </div>
+                <div class="details-header-col right">
+                    <div class="details-header-label">Amount</div>
+                    <div class="details-header-amount" id="details-amount">—</div>
+                </div>
+            </header>
+            <div class="details-body" id="details-body"></div>
+        </div>
+    </div>
+
     <!-- ============ Toast ============ -->
     <div class="toast" id="toast" role="status" aria-live="polite" hidden>
         <span class="toast-icon"></span>
@@ -71,6 +104,7 @@
     </div>
 
     <script src="/assets/sidebar.js"></script>
+    <script src="/assets/qp-codes.js"></script>
     <script src="dataset.js"></script>
 </body>
 </html>

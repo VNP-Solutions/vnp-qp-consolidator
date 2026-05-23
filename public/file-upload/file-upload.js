@@ -729,5 +729,13 @@
     });
 
     // ============== Init ==============
+    // Honour an incoming ?q=<query> param — e.g. when navigated to from the
+    // Dataset page's Source File link. Pre-fills the search box and filters
+    // the list to that filename.
+    const incomingQ = new URLSearchParams(window.location.search).get('q');
+    if (incomingQ) {
+        searchInput.value = incomingQ;
+        searchQuery = incomingQ;
+    }
     loadFiles();
 })();
