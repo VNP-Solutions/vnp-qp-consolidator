@@ -252,10 +252,150 @@ async function distinctValues({ userId, field, search, limit = 200 }) {
     };
 }
 
+function buildPeriodMatch(period) {
+    if (!period || period === 'all') return null;
+    const now = Date.now();
+    let days;
+    if (period === 'week') days = 7;
+    else if (period === 'month') days = 30;
+    else if (period === 'year') days = 365;
+    else return null;
+    const cutoff = new Date(now - days * 24 * 60 * 60 * 1000);
+    return { $gte: cutoff };
+}
+
+async function getStats({ userId, period = 'all' }) {
+    const fileIds = await getUserFileIds(userId);
+    if (fileIds.length === 0) {
+        return {
+            period,
+            total_transactions: 0,
+            total_amount: 0,
+            reported_range: null,
+            by_ota: {},
+        };
+    }
+
+    const match = { file_id: { $in: fileIds } };
+    const periodMatch = buildPeriodMatch(period);
+    if (periodMatch) match.reported_date = periodMatch;
+
+    const [result] = await QpFileData.aggregate([
+        { $match: match },
+        {
+            $facet: {
+                totals: [
+                    {
+                        $group: {
+                            _id: null,
+                            total_transactions: { $sum: 1 },
+                            total_amount: { $sum: '$amount' },
+                            earliest: { $min: '$reported_date' },
+                            latest: { $max: '$reported_date' },
+                        },
+                    },
+                ],
+                by_ota: [
+                    { $match: { ota: { $ne: null } } },
+                    {
+                        $group: {
+                            _id: '$ota',
+                            count: { $sum: 1 },
+                            amount: { $sum: '$amount' },
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+
+    const totals = (result && result.totals && result.totals[0]) || {};
+    const by_ota = {};
+    for (const entry of (result && result.by_ota) || []) {
+        if (entry._id) {
+            by_ota[entry._id] = {
+                count: entry.count || 0,
+                amount: entry.amount || 0,
+            };
+        }
+    }
+
+    return {
+        period,
+        total_transactions: totals.total_transactions || 0,
+        total_amount: totals.total_amount || 0,
+        reported_range: totals.earliest
+            ? { earliest: totals.earliest, latest: totals.latest }
+            : null,
+        by_ota,
+    };
+}
+
+/**
+ * Same filter + sort logic as queryData but with no skip/limit — used by
+ * the export endpoint to fetch the full filtered dataset. Capped to a
+ * safety max so a runaway export can't OOM the server.
+ */
+const EXPORT_HARD_CAP = 100000;
+
+async function queryAll({ userId, filters, sort, search }) {
+    const fileIds = await getUserFileIds(userId);
+    if (fileIds.length === 0) return [];
+
+    const query = { file_id: { $in: fileIds } };
+
+    if (filters && typeof filters === 'object') {
+        for (const [field, filter] of Object.entries(filters)) {
+            const kind = FILTERABLE_FIELDS[field];
+            if (!kind) continue;
+            const cond = buildCondition(kind, filter);
+            if (cond != null) query[field] = cond;
+        }
+    }
+
+    const orClauses = buildSearchOr(search);
+    if (orClauses) query.$or = orClauses;
+
+    let mongoSort = { created_at: -1 };
+    if (Array.isArray(sort) && sort.length) {
+        mongoSort = {};
+        for (const s of sort) {
+            if (!s || !SORTABLE_FIELDS.has(s.key)) continue;
+            mongoSort[s.key] = s.dir === 'asc' ? 1 : -1;
+        }
+        if (Object.keys(mongoSort).length === 0) {
+            mongoSort = { created_at: -1 };
+        }
+    }
+
+    return QpFileData.find(query).sort(mongoSort).limit(EXPORT_HARD_CAP).lean();
+}
+
+/**
+ * Fetch specific rows by id, but only the ones the user actually owns
+ * (via the file_id → uploaded_by chain). Returns rows in the same order
+ * Mongo finds them in (created_at desc by default).
+ */
+async function getByIds({ userId, ids }) {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    const fileIds = await getUserFileIds(userId);
+    if (fileIds.length === 0) return [];
+
+    return QpFileData.find({
+        _id: { $in: ids },
+        file_id: { $in: fileIds },
+    })
+        .sort({ created_at: -1 })
+        .lean();
+}
+
 module.exports = {
     listData,
     queryData,
+    queryAll,
+    getByIds,
     distinctValues,
+    getStats,
     SEARCHABLE_FIELDS,
     FILTERABLE_FIELDS,
 };

@@ -114,6 +114,10 @@
     let filterState = {};
     let sortState = null; // { key, dir }
 
+    // Selected row ids — persists across pagination so users can build a
+    // selection by paging through.
+    const selectedIds = new Set();
+
     // ============== Auth helper ==============
     function getToken() {
         return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
@@ -277,7 +281,15 @@
 
     // ============== Rendering ==============
     function renderHead() {
-        theadRow.innerHTML = COLUMNS.map((col) => {
+        const checkCell = `
+            <th class="col-check">
+                <label class="head-check-label" id="head-check-label">
+                    <input type="checkbox" id="select-all-check" aria-label="Select all visible rows">
+                    <span class="head-check-box"></span>
+                </label>
+            </th>
+        `;
+        const cols = COLUMNS.map((col) => {
             if (!col.filter) {
                 return `<th><span class="th-label">${escapeHtml(col.label)}</span></th>`;
             }
@@ -293,42 +305,59 @@
                     }</button>
                 </th>`;
         }).join('');
+        theadRow.innerHTML = checkCell + cols;
+        updateSelectAllUi();
     }
 
     function renderRows(rows) {
+        const colspan = COLUMNS.length + 1;
         if (!rows.length) {
             const message = searchQuery
                 ? `No rows match &ldquo;<strong>${escapeHtml(searchQuery)}</strong>&rdquo;. Try a different search.`
                 : 'No QP data yet. Upload a report from the Files page to populate the dataset.';
             tbody.innerHTML = `
-                <tr><td colspan="${COLUMNS.length}">
+                <tr><td colspan="${colspan}">
                     <div class="data-empty">
                         <div class="empty-icon">${ICONS.emptyTable}</div>
                         <div>${message}</div>
                     </div>
                 </td></tr>`;
             countEl.textContent = searchQuery ? '0 matches' : '0 total';
+            updateSelectAllUi();
             return;
         }
         tbody.innerHTML = '';
         const frag = document.createDocumentFragment();
         rows.forEach((row, i) => {
+            const id = String(row._id);
+            const isSelected = selectedIds.has(id);
             const tr = document.createElement('tr');
             tr.style.animationDelay = `${Math.min(i * 18, 360)}ms`;
-            tr.dataset.rowId = row._id;
-            tr.innerHTML = COLUMNS.map((col) => {
+            tr.dataset.rowId = id;
+            if (isSelected) tr.classList.add('row-selected');
+            const cells = COLUMNS.map((col) => {
                 const cell = formatCell(row, col);
                 const titleAttr = row[col.key] != null && row[col.key] !== ''
                     ? ` title="${escapeHtml(String(row[col.key]))}"`
                     : '';
                 return `<td class="${cell.cls}"${titleAttr}>${cell.html}</td>`;
             }).join('');
+            tr.innerHTML = `
+                <td class="col-check">
+                    <label class="row-check-label">
+                        <input type="checkbox" class="row-check" data-row-id="${id}" ${isSelected ? 'checked' : ''}>
+                        <span class="row-check-box"></span>
+                    </label>
+                </td>
+                ${cells}
+            `;
             frag.appendChild(tr);
         });
         tbody.appendChild(frag);
         countEl.textContent = searchQuery
             ? `${totalRows} match${totalRows === 1 ? '' : 'es'}`
             : `${totalRows} total`;
+        updateSelectAllUi();
     }
 
     function buildPageList(current, total) {
@@ -395,13 +424,153 @@
     // ============== Row click → Details modal ==============
     tbody.addEventListener('click', (e) => {
         // Ignore clicks on interactive elements inside the row
-        if (e.target.closest('.copy-btn, .cell-link')) return;
+        if (e.target.closest('.copy-btn, .cell-link, .row-check-label, .row-check, .row-check-box')) return;
         const tr = e.target.closest('tr[data-row-id]');
         if (!tr) return;
         const row = currentRows.find((r) => String(r._id) === tr.dataset.rowId);
         if (!row) return;
         openDetailsModal(row);
     });
+
+    // ============== Multiselect ==============
+    const exportBtn = document.getElementById('export-btn');
+    const exportMenu = document.getElementById('export-menu');
+    const exportSelectedBtn = document.getElementById('export-selected-btn');
+    const exportCountEl = document.getElementById('export-count');
+
+    // Per-row checkbox change
+    tbody.addEventListener('change', (e) => {
+        const checkbox = e.target.closest('.row-check');
+        if (!checkbox) return;
+        const id = checkbox.dataset.rowId;
+        if (!id) return;
+        if (checkbox.checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+        // Toggle selected-row styling without re-rendering
+        const tr = checkbox.closest('tr');
+        if (tr) tr.classList.toggle('row-selected', checkbox.checked);
+        updateSelectAllUi();
+    });
+
+    // Select-all (visible) checkbox
+    theadRow.addEventListener('change', (e) => {
+        if (e.target.id !== 'select-all-check') return;
+        const checked = e.target.checked;
+        currentRows.forEach((row) => {
+            const id = String(row._id);
+            if (checked) selectedIds.add(id);
+            else selectedIds.delete(id);
+        });
+        // Reflect in the rendered rows
+        document.querySelectorAll('.row-check').forEach((cb) => {
+            const id = cb.dataset.rowId;
+            cb.checked = selectedIds.has(id);
+            const tr = cb.closest('tr');
+            if (tr) tr.classList.toggle('row-selected', cb.checked);
+        });
+        updateSelectAllUi();
+    });
+
+    function updateSelectAllUi() {
+        const headCheck = document.getElementById('select-all-check');
+        const headLabel = document.getElementById('head-check-label');
+        if (!headCheck || !headLabel) return;
+        const visibleIds = currentRows.map((r) => String(r._id));
+        const visibleSelected = visibleIds.filter((id) => selectedIds.has(id));
+        if (visibleIds.length === 0) {
+            headCheck.checked = false;
+            headLabel.classList.remove('indeterminate');
+        } else if (visibleSelected.length === visibleIds.length) {
+            headCheck.checked = true;
+            headLabel.classList.remove('indeterminate');
+        } else if (visibleSelected.length === 0) {
+            headCheck.checked = false;
+            headLabel.classList.remove('indeterminate');
+        } else {
+            headCheck.checked = false;
+            headLabel.classList.add('indeterminate');
+        }
+        updateExportSelectedState();
+    }
+
+    function updateExportSelectedState() {
+        const n = selectedIds.size;
+        exportSelectedBtn.disabled = n === 0;
+        if (n > 0) {
+            exportCountEl.hidden = false;
+            exportCountEl.textContent = `(${n})`;
+        } else {
+            exportCountEl.hidden = true;
+        }
+    }
+
+    // ============== Export dropdown ==============
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = exportMenu.hidden;
+        exportMenu.hidden = !open;
+        exportBtn.classList.toggle('open', open);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (exportMenu.hidden) return;
+        if (exportBtn.contains(e.target) || exportMenu.contains(e.target)) return;
+        exportMenu.hidden = true;
+        exportBtn.classList.remove('open');
+    });
+
+    exportMenu.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn || btn.disabled) return;
+        exportMenu.hidden = true;
+        exportBtn.classList.remove('open');
+        const action = btn.dataset.action;
+        if (action === 'export-all') {
+            await downloadExport({
+                filters: filterState,
+                sort: sortState ? [sortState] : [],
+                search: searchQuery || undefined,
+            }, 'Exporting all rows…');
+        } else if (action === 'export-selected') {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            await downloadExport({ ids }, `Exporting ${ids.length} row${ids.length === 1 ? '' : 's'}…`);
+        }
+    });
+
+    async function downloadExport(body, loadingLabel) {
+        const originalHtml = exportBtn.innerHTML;
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = `<span class="btn-mini-spinner"></span>${escapeHtml(loadingLabel || 'Exporting…')}`;
+        try {
+            const res = await fetch('/api/dataset/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Export failed');
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const filename = `qp-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('success', `Exported ${filename}`);
+        } catch (err) {
+            console.error(err);
+            showToast('error', err.message || 'Could not export the dataset.');
+        } finally {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = originalHtml;
+        }
+    }
 
     async function copyToClipboard(text) {
         if (navigator.clipboard && window.isSecureContext) {
@@ -888,15 +1057,49 @@
         const popoverWidth = 320;
         const margin = 12;
 
-        // Default: align left edge of popover with left edge of header (with small offset)
+        // Horizontal: align with the header button, but keep inside viewport.
         let left = rect.left - 8;
-        // Keep within viewport
         if (left + popoverWidth > window.innerWidth - margin) {
             left = window.innerWidth - popoverWidth - margin;
         }
         if (left < margin) left = margin;
 
-        const top = rect.bottom + 6;
+        // Compute the maximum space available below vs above the button.
+        const spaceBelow = window.innerHeight - rect.bottom - margin - 6;
+        const spaceAbove = rect.top - margin - 6;
+
+        // Place on whichever side has more room. Then explicitly cap the
+        // body's height so the popover always fits within that space —
+        // belt-and-suspenders on top of the CSS max-height.
+        let top;
+        let availableHeight;
+        if (spaceBelow >= spaceAbove || spaceBelow >= 280) {
+            // Below — preferred when there's reasonable room
+            top = rect.bottom + 6;
+            availableHeight = spaceBelow;
+        } else {
+            // Above
+            availableHeight = spaceAbove;
+            top = rect.top - 6; // will offset by popover height after sizing
+        }
+
+        // Apply explicit max-height to the body so content scrolls within
+        // the available space (header + footer always visible).
+        const header = popoverEl.querySelector('.filter-popover-header');
+        const body = popoverEl.querySelector('.filter-popover-body');
+        const footer = popoverEl.querySelector('.filter-popover-footer');
+        const headerH = header ? header.offsetHeight : 0;
+        const footerH = footer ? footer.offsetHeight : 0;
+        const maxBodyH = Math.max(120, availableHeight - headerH - footerH);
+        if (body) body.style.maxHeight = `${maxBodyH}px`;
+
+        // If placing above, finalise the top now that we know body's height.
+        if (top !== rect.bottom + 6) {
+            const finalHeight = popoverEl.offsetHeight;
+            top = rect.top - finalHeight - 6;
+            if (top < margin) top = margin;
+        }
+
         popoverEl.style.left = `${left}px`;
         popoverEl.style.top = `${top}px`;
     }
@@ -922,6 +1125,14 @@
             </div>
         `;
         attachPopoverHandlers();
+        // innerHTML wipes the inline max-height we set on the body, and the
+        // newly-rendered content may also change the popover's total height
+        // (e.g. when the distinct-values list arrives async). Re-running the
+        // positioning logic re-fits and re-anchors so the Apply button stays
+        // reachable.
+        if (popoverCtx.anchorEl) {
+            positionPopover(popoverCtx.anchorEl);
+        }
     }
 
     function renderSortSection(kind) {
@@ -1288,7 +1499,136 @@
         if (!popoverEl.hidden && popoverCtx) positionPopover(popoverCtx.anchorEl);
     });
 
+    // ============================================================
+    //                    Stats section
+    // ============================================================
+    const statsGrid = document.getElementById('stats-grid');
+    const periodTabs = document.getElementById('period-tabs');
+
+    let currentPeriod = 'all';
+    let statsSeq = 0;
+
+    async function loadStats() {
+        const seq = ++statsSeq;
+        statsGrid.classList.add('fade');
+        try {
+            const res = await fetch(`/api/dataset/stats?period=${currentPeriod}`, {
+                headers: authHeaders(),
+            });
+            if (!res.ok) throw new Error('stats fetch failed');
+            const stats = await res.json();
+            if (seq !== statsSeq) return;
+            renderStats(stats);
+        } catch (e) {
+            console.error('Failed to load stats', e);
+        } finally {
+            if (seq === statsSeq) statsGrid.classList.remove('fade');
+        }
+    }
+
+    function renderStats(stats) {
+        statsGrid.innerHTML = `
+            <div class="stat-card">
+                <div class="stat-label">Total Transactions</div>
+                <div class="stat-value">${formatInt(stats.total_transactions)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Amount</div>
+                <div class="stat-value amount">${formatAmount(stats.total_amount)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reported Range</div>
+                ${renderRange(stats.reported_range)}
+            </div>
+            <div class="stat-card stat-card-ota">
+                <div class="stat-label">Totals by OTA</div>
+                <div class="ota-list">${renderStatsOtaList(stats)}</div>
+            </div>
+        `;
+    }
+
+    function renderRange(range) {
+        if (!range || !range.earliest) {
+            return '<div class="range-empty">No data yet</div>';
+        }
+        const earliest = formatDate(range.earliest);
+        const latest = formatDate(range.latest);
+        return `
+            <div class="stat-range">
+                <div class="range-row">
+                    <span class="range-tag">From</span>
+                    <span class="range-date">${escapeHtml(earliest)}</span>
+                </div>
+                <div class="range-row">
+                    <span class="range-tag">To</span>
+                    <span class="range-date">${escapeHtml(latest)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderStatsOtaList(stats) {
+        const brands = ['Expedia', 'Booking', 'Agoda'];
+        // Share is computed against the sum of OTA amounts only (not total
+        // amount), so unattributed transactions don't skew the percentages.
+        const otaTotal = brands.reduce((sum, b) => {
+            const v = stats.by_ota && stats.by_ota[b];
+            return sum + (v && v.amount ? v.amount : 0);
+        }, 0);
+
+        return brands
+            .map((brand) => {
+                const data = (stats.by_ota && stats.by_ota[brand]) || { count: 0, amount: 0 };
+                const icon = (OTA_BRANDS[brand] && OTA_BRANDS[brand].icon) || '';
+                const share = otaTotal > 0 ? (data.amount / otaTotal) * 100 : 0;
+                const shareLabel = otaTotal > 0 ? `${share.toFixed(1)}%` : '—';
+                return `
+                    <div class="ota-row">
+                        <span class="ota-favicon">${icon}</span>
+                        <span class="ota-name">${brand}</span>
+                        <span class="ota-amount">${formatAmount(data.amount)}</span>
+                        <span class="ota-share">${shareLabel}</span>
+                    </div>
+                `;
+            })
+            .join('');
+    }
+
+    function formatInt(n) {
+        if (n == null) return '0';
+        return Number(n).toLocaleString();
+    }
+
+    periodTabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-tab');
+        if (!btn || btn.classList.contains('active')) return;
+        periodTabs.querySelectorAll('.period-tab').forEach((b) => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        currentPeriod = btn.dataset.period;
+        loadStats();
+    });
+
+    // ============== Skeleton ==============
+    function renderSkeleton(rows = 8) {
+        // One random-but-consistent width per column so each row looks plausible.
+        const widths = COLUMNS.map(() => 40 + Math.floor(Math.random() * 50));
+        const rowHtml = widths
+            .map((w) => `<td><div class="skel-pill" style="width: ${w}%"></div></td>`)
+            .join('');
+        const trs = [];
+        for (let i = 0; i < rows; i++) {
+            trs.push(`<tr class="skeleton-row" style="animation-delay: ${i * 40}ms">${rowHtml}</tr>`);
+        }
+        tbody.innerHTML = trs.join('');
+    }
+
     // ============== Init ==============
     renderHead();
+    renderSkeleton(8);
     loadData();
+    loadStats();
 })();

@@ -3,6 +3,495 @@
    Mirrors the file-upload table styles, tuned for many columns
    ============================================================ */
 
+/* ============================================================
+   Stats section — between page-header and the data card
+   ============================================================ */
+.stats-section {
+    margin-bottom: 24px;
+    animation: fadeSlideIn 0.4s ease-out 0.05s both;
+}
+
+.stats-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+.period-tabs {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.period-tab {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 7px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.05s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.period-tab:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.period-tab:active {
+    transform: translateY(1px);
+}
+
+.period-tab.active {
+    background: #FFD200;
+    color: #0F1B33;
+    border-color: #FFD200;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(255, 210, 0, 0.25);
+}
+
+/* Grid: 3 simple cards + 1 wider OTA card */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) 1.45fr;
+    gap: 14px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 18px 20px;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s, box-shadow 0.25s;
+    position: relative;
+    overflow: hidden;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    pointer-events: none;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.stat-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: -0.6px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.stat-value.amount {
+    color: #7FE3B5;
+    text-shadow: 0 0 24px rgba(127, 227, 181, 0.18);
+}
+
+.stat-sub {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+/* Range card — two stacked dates */
+.stat-range {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.range-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.range-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    min-width: 42px;
+}
+
+.range-date {
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFFFFF;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+}
+
+.range-empty {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+}
+
+/* OTA card — three rows with favicon + amount + share % */
+.stat-card-ota .ota-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stat-card-ota .ota-row {
+    display: grid;
+    grid-template-columns: 20px 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+}
+
+.stat-card-ota .ota-favicon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-ota .ota-favicon svg,
+.stat-card-ota .ota-favicon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stat-card-ota .ota-name {
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.stat-card-ota .ota-amount {
+    color: #FFFFFF;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+}
+
+.stat-card-ota .ota-share {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 44px;
+    text-align: right;
+}
+
+/* Loading skeleton */
+.stat-skeleton {
+    min-height: 110px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: skelShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skelShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Table row skeleton — shown on initial page load before the first fetch */
+.skeleton-row {
+    animation: rowFadeIn 0.35s ease-out both;
+}
+
+.skeleton-row td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.skel-pill {
+    height: 11px;
+    border-radius: 6px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.04) 0%,
+        rgba(255, 255, 255, 0.09) 50%,
+        rgba(255, 255, 255, 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: skelShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes rowFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.stats-grid.fade {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+/* Responsive: 2x2 on narrow screens */
+@media (max-width: 1100px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .stat-card-ota {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .stat-card-ota {
+        grid-column: span 1;
+    }
+}
+
+/* ============================================================
+   Export button + dropdown menu
+   ============================================================ */
+.data-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.export-wrap {
+    position: relative;
+}
+
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    height: 36px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.export-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.export-btn .export-chevron {
+    width: 11px;
+    height: 11px;
+    transition: transform 0.18s;
+}
+
+.export-btn.open .export-chevron {
+    transform: rotate(180deg);
+}
+
+.export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 220px;
+    background: linear-gradient(180deg, #142544 0%, #0F1B33 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    padding: 5px;
+    z-index: 60;
+    animation: exportMenuIn 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.export-menu[hidden] { display: none; }
+
+@keyframes exportMenuIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.export-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+}
+
+.export-option svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    fill: none;
+    flex-shrink: 0;
+}
+
+.export-option:hover:not(:disabled) {
+    background: rgba(255, 210, 0, 0.08);
+    color: #FFD200;
+}
+
+.export-option:disabled {
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+}
+
+.export-option .export-count {
+    color: #FFD200;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.export-option:disabled .export-count {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================
+   Multiselect column on the data table
+   ============================================================ */
+.data-table th.col-check,
+.data-table td.col-check {
+    width: 38px;
+    padding-left: 18px;
+    padding-right: 6px;
+    overflow: visible;
+}
+
+.data-table th.col-check {
+    text-align: left;
+}
+
+.row-check-label,
+.head-check-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px;
+    margin: -4px;
+}
+
+.row-check-label input,
+.head-check-label input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.row-check-box,
+.head-check-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.row-check-label input:checked + .row-check-box,
+.head-check-label input:checked + .head-check-box {
+    background: #FFD200;
+    border-color: #FFD200;
+}
+
+.row-check-label input:checked + .row-check-box::after,
+.head-check-label input:checked + .head-check-box::after {
+    content: '';
+    width: 8px;
+    height: 5px;
+    border-left: 2px solid #0F1B33;
+    border-bottom: 2px solid #0F1B33;
+    transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* Indeterminate state on the select-all header checkbox */
+.head-check-label.indeterminate .head-check-box {
+    background: #FFD200;
+    border-color: #FFD200;
+}
+
+.head-check-label.indeterminate .head-check-box::after {
+    content: '';
+    width: 8px;
+    height: 2px;
+    background: #0F1B33;
+    border-radius: 1px;
+    transform: none;
+    border: none;
+}
+
+/* Rows with a selected checkbox get a subtle yellow tint */
+.data-table tbody tr.row-selected {
+    background: rgba(255, 210, 0, 0.04);
+}
+
+/* Tiny inline spinner shown inside the Export button while a download is in flight */
+.btn-mini-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: btn-spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
 .data-card {
     background: rgba(255, 255, 255, 0.025);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -452,6 +941,9 @@
     z-index: 250;
     width: 320px;
     max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    display: flex;
+    flex-direction: column;
     background: linear-gradient(180deg, #142544 0%, #0F1B33 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -481,11 +973,17 @@
     font-weight: 600;
     color: #FFFFFF;
     letter-spacing: 0.2px;
+    flex-shrink: 0;
 }
 
+/* Body scrolls vertically when content exceeds its calculated max-height
+   (set inline by JS based on viewport). Single scroll container so the
+   Apply button in the footer is always reachable. */
 .filter-popover-body {
-    max-height: 460px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .filter-popover-footer {
@@ -494,11 +992,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
-/* Sort buttons row */
+/* Sort buttons row — always visible above the filter section */
 .filter-sort-section {
     padding: 6px 0;
+    flex-shrink: 0;
 }
 
 .filter-sort-btn {
@@ -533,7 +1033,7 @@
     flex-shrink: 0;
 }
 
-/* Filter section */
+/* Filter section — natural sizing. The popover body scrolls when needed. */
 .filter-section {
     padding: 14px 18px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -672,10 +1172,8 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* Checkbox list */
+/* Checkbox list — natural sizing, scroll handled by the body */
 .filter-checkboxes {
-    max-height: 230px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 2px;

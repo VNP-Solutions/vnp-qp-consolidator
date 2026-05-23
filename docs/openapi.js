@@ -633,6 +633,118 @@ module.exports = {
                 },
             },
         },
+        '/dataset/export': {
+            post: {
+                tags: ['Dataset'],
+                summary: 'Export dataset rows as an .xlsx file',
+                description:
+                    'Returns a streamable .xlsx file with columns in the same order as the QP import format (so the export is re-importable). Pass `ids` to export a specific selection (overrides filters); otherwise the call respects `filters`/`sort`/`search` just like POST /dataset/query but with no pagination (hard-capped at 100k rows for safety).',
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: false,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    ids: {
+                                        type: 'array',
+                                        items: { type: 'string' },
+                                        description: 'Specific QpFileData _ids to export. When provided, filters/sort/search are ignored.',
+                                    },
+                                    filters: { type: 'object', additionalProperties: { type: 'object' } },
+                                    sort: {
+                                        type: 'array',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                key: { type: 'string' },
+                                                dir: { type: 'string', enum: ['asc', 'desc'] },
+                                            },
+                                        },
+                                    },
+                                    search: { type: 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: '.xlsx file (binary)',
+                        content: {
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+                                schema: { type: 'string', format: 'binary' },
+                            },
+                        },
+                    },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
+        },
+        '/dataset/stats': {
+            get: {
+                tags: ['Dataset'],
+                summary: 'Aggregate stats for the dataset page',
+                description:
+                    'Returns total transaction count, total amount summed, reported_date range, and per-OTA totals. Scoped to the authenticated user\'s files. Optional `period` filter narrows to the past N days based on `reported_date`.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: 'period',
+                        in: 'query',
+                        schema: {
+                            type: 'string',
+                            enum: ['all', 'year', 'month', 'week'],
+                            default: 'all',
+                        },
+                        description:
+                            'Time window applied to reported_date. `year` = last 365d, `month` = last 30d, `week` = last 7d. Omit or pass `all` for no date filter.',
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: 'Stats payload',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        period: { type: 'string', example: 'all' },
+                                        total_transactions: { type: 'integer', example: 9534 },
+                                        total_amount: { type: 'number', example: 1234567.89 },
+                                        reported_range: {
+                                            type: 'object',
+                                            nullable: true,
+                                            properties: {
+                                                earliest: { type: 'string', format: 'date-time' },
+                                                latest: { type: 'string', format: 'date-time' },
+                                            },
+                                        },
+                                        by_ota: {
+                                            type: 'object',
+                                            additionalProperties: {
+                                                type: 'object',
+                                                properties: {
+                                                    count: { type: 'integer' },
+                                                    amount: { type: 'number' },
+                                                },
+                                            },
+                                            example: {
+                                                Expedia: { count: 4012, amount: 654321.0 },
+                                                Booking: { count: 3220, amount: 482900.5 },
+                                                Agoda: { count: 1102, amount: 97345.25 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
+        },
         '/dataset/distinct/{field}': {
             get: {
                 tags: ['Dataset'],

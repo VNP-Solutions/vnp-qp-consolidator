@@ -27,6 +27,25 @@
                 </div>
             </header>
 
+            <!-- ============ Stats ============ -->
+            <section class="stats-section">
+                <div class="stats-controls">
+                    <div class="period-tabs" id="period-tabs" role="tablist" aria-label="Stats period">
+                        <button class="period-tab active" data-period="all" role="tab" aria-selected="true">All time</button>
+                        <button class="period-tab" data-period="year" role="tab" aria-selected="false">Year</button>
+                        <button class="period-tab" data-period="month" role="tab" aria-selected="false">Month</button>
+                        <button class="period-tab" data-period="week" role="tab" aria-selected="false">Week</button>
+                    </div>
+                </div>
+                <div class="stats-grid" id="stats-grid">
+                    <!-- Skeleton cards while first fetch is in flight -->
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                </div>
+            </section>
+
             <section class="data-card">
                 <div class="data-card-header">
                     <div>
@@ -37,6 +56,33 @@
                         <p class="data-sub">Search by Reservation ID, MID, or DBA.</p>
                     </div>
                     <div class="data-tools">
+                        <div class="export-wrap" id="export-wrap">
+                            <button class="btn btn-ghost export-btn" id="export-btn" type="button">
+                                <svg viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 2v8M4.5 6.5L8 10l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M2.5 11v1.5A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Export
+                                <svg class="export-chevron" viewBox="0 0 12 12" fill="none">
+                                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <div class="export-menu" id="export-menu" hidden>
+                                <button class="export-option" type="button" data-action="export-all">
+                                    <svg viewBox="0 0 16 16" fill="none">
+                                        <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                    Export all
+                                </button>
+                                <button class="export-option" type="button" data-action="export-selected" id="export-selected-btn" disabled>
+                                    <svg viewBox="0 0 16 16" fill="none">
+                                        <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                        <path d="M5.5 8l2 2 3-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <span>Export selected <span class="export-count" id="export-count" hidden></span></span>
+                                </button>
+                            </div>
+                        </div>
                         <div class="search" id="search">
                             <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                                 <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
