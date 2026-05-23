@@ -1284,10 +1284,169 @@
 }
 
 .payment-card-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    max-width: 140px;
+}
+
+/* Default "VNP" wordmark — only used when there's no OTA */
+.payment-card-brand.vnp {
+    height: auto;
+    display: inline;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 1.6px;
     color: rgba(255, 255, 255, 0.92);
+}
+
+.payment-card-brand img,
+.payment-card-brand svg {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+/* ============================================================
+   OTA-themed card variants
+   ============================================================ */
+
+/* ============================================================
+   OTA cards use LIGHT brand-colored bodies so the logos
+   (which have transparent backgrounds + dark text) read cleanly
+   without needing a backdrop pill.
+   ============================================================ */
+
+/* Expedia — gold premium card with navy details */
+.payment-card.card-expedia {
+    background:
+        radial-gradient(circle at 0% 0%, rgba(255, 250, 220, 0.55) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(180, 130, 0, 0.25) 0%, transparent 55%),
+        linear-gradient(135deg, #FFD86B 0%, #FFC72C 50%, #E0A800 100%);
+    color: #003263;
+}
+
+.payment-card.card-expedia:hover {
+    box-shadow:
+        0 30px 56px rgba(0, 0, 0, 0.4),
+        0 0 32px rgba(255, 199, 44, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.payment-card.card-expedia .payment-card-number {
+    color: #003263;
+}
+
+.payment-card.card-expedia .payment-card-number .group.live {
+    color: #003263;
+    text-shadow: 0 0 12px rgba(0, 50, 99, 0.18);
+}
+
+.payment-card.card-expedia .pc-label {
+    color: rgba(0, 50, 99, 0.55);
+}
+
+.payment-card.card-expedia .pc-value {
+    color: #003263;
+}
+
+.payment-card.card-expedia .payment-card-chip {
+    background: linear-gradient(135deg, #2C5A95 0%, #003263 60%, #001530 100%);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.payment-card.card-expedia .payment-card-chip::before {
+    background-image:
+        linear-gradient(to right, transparent 32%, rgba(255, 255, 255, 0.3) 32%, rgba(255, 255, 255, 0.3) 36%, transparent 36%, transparent 64%, rgba(255, 255, 255, 0.3) 64%, rgba(255, 255, 255, 0.3) 68%, transparent 68%),
+        linear-gradient(to bottom, transparent 32%, rgba(255, 255, 255, 0.3) 32%, rgba(255, 255, 255, 0.3) 36%, transparent 36%, transparent 64%, rgba(255, 255, 255, 0.3) 64%, rgba(255, 255, 255, 0.3) 68%, transparent 68%);
+}
+
+/* Booking — light sky-to-blue card with deep navy details (mirrored
+   horizontally so the light area sits under the logo in the top-right) */
+.payment-card.card-booking {
+    background:
+        radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(0, 30, 90, 0.35) 0%, transparent 55%),
+        linear-gradient(225deg, #DBEBFF 0%, #8DBAEC 50%, #2D72C8 100%);
+    color: #003580;
+}
+
+.payment-card.card-booking:hover {
+    box-shadow:
+        0 30px 56px rgba(0, 0, 0, 0.4),
+        0 0 32px rgba(45, 114, 200, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.payment-card.card-booking .payment-card-number {
+    color: #003580;
+}
+
+.payment-card.card-booking .payment-card-number .group.live {
+    color: #003580;
+    text-shadow: 0 0 12px rgba(0, 53, 128, 0.22);
+}
+
+.payment-card.card-booking .pc-label {
+    color: rgba(0, 53, 128, 0.55);
+}
+
+.payment-card.card-booking .pc-value {
+    color: #003580;
+}
+
+.payment-card.card-booking .payment-card-chip {
+    background: linear-gradient(135deg, #FEBA02 0%, #C18A00 60%, #7B5800 100%);
+}
+
+/* Agoda — soft platinum with subtle multi-color hints */
+.payment-card.card-agoda {
+    background:
+        radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(60, 65, 75, 0.2) 0%, transparent 55%),
+        radial-gradient(circle at 30% 90%, rgba(255, 26, 92, 0.08) 0%, transparent 35%),
+        radial-gradient(circle at 70% 90%, rgba(0, 120, 255, 0.08) 0%, transparent 35%),
+        linear-gradient(135deg, #F4F6F9 0%, #D8DDE5 50%, #A8AEBA 100%);
+    color: #1E2128;
+}
+
+.payment-card.card-agoda:hover {
+    box-shadow:
+        0 30px 56px rgba(0, 0, 0, 0.35),
+        0 0 32px rgba(168, 174, 186, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.payment-card.card-agoda .payment-card-number {
+    color: #1E2128;
+}
+
+.payment-card.card-agoda .payment-card-number .group.live {
+    color: #1E2128;
+    text-shadow: 0 0 12px rgba(30, 33, 40, 0.15);
+}
+
+.payment-card.card-agoda .pc-label {
+    color: rgba(30, 33, 40, 0.55);
+}
+
+.payment-card.card-agoda .pc-value {
+    color: #1E2128;
+}
+
+.payment-card.card-agoda .payment-card-chip {
+    background: linear-gradient(135deg, #E8EBF0 0%, #A8AEBA 60%, #595E68 100%);
+}
+
+/* Shine sweep on light OTA cards — use a darker reflection so it still reads */
+.payment-card.card-expedia::before,
+.payment-card.card-booking::before,
+.payment-card.card-agoda::before {
+    background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
 }
 
 /* Card number */

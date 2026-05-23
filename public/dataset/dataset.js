@@ -56,7 +56,10 @@
         search: '<svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
     };
 
-    // OTA brand definitions — favicon-style SVG + brand colors used for badges
+    // OTA brand definitions:
+    //   icon     — small circular favicon for the table badge
+    //   wordmark — full SVG wordmark for the credit-card mockup header
+    //   cardClass — class applied to the payment card to swap brand colors
     const OTA_BRANDS = {
         Expedia: {
             slug: 'expedia',
@@ -65,6 +68,8 @@
                 '<circle cx="12" cy="12" r="12" fill="#FFC72C"/>' +
                 '<path d="M6 11.5l4.5-2v1.6h7v1.8h-7v1.6L6 12.5z" fill="#003263"/>' +
                 '</svg>',
+            wordmark: '<img src="/assets/expedia-logo.png" alt="Expedia" />',
+            cardClass: 'card-expedia',
         },
         Booking: {
             slug: 'booking',
@@ -73,10 +78,14 @@
                 '<rect width="24" height="24" rx="5" fill="#003580"/>' +
                 '<text x="12" y="17.5" font-size="13.5" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif" fill="#FEBA02">B.</text>' +
                 '</svg>',
+            wordmark: '<img src="/assets/booking-logo.png" alt="Booking.com" />',
+            cardClass: 'card-booking',
         },
         Agoda: {
             slug: 'agoda',
             icon: '<img src="/assets/agoda-favicon.png" alt="Agoda" />',
+            wordmark: '<img src="/assets/agoda-logo.png" alt="Agoda" />',
+            cardClass: 'card-agoda',
         },
     };
 
@@ -686,11 +695,19 @@
         const expiry = row.account_expiration
             ? formatExpiry(row.account_expiration)
             : '••/••';
+
+        // OTA-specific theming for the card
+        const brand = row.ota && OTA_BRANDS[row.ota];
+        const cardClass = brand ? ` ${brand.cardClass}` : '';
+        const brandMark = brand && brand.wordmark
+            ? `<span class="payment-card-brand">${brand.wordmark}</span>`
+            : '<div class="payment-card-brand vnp">VNP</div>';
+
         return `
-            <div class="payment-card">
+            <div class="payment-card${cardClass}">
                 <div class="payment-card-top">
                     <div class="payment-card-chip" aria-hidden="true"></div>
-                    <div class="payment-card-brand">VNP</div>
+                    ${brandMark}
                 </div>
                 <div class="payment-card-number" aria-label="Card number">
                     <span class="group">••••</span>
