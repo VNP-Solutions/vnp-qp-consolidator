@@ -95,6 +95,24 @@ function validateBuffer(buffer) {
     return { valid: missing.length === 0, missing, extra, headers };
 }
 
+/**
+ * Derive the OTA (online travel agency) for a transaction by inspecting the
+ * QP report's FirstName field. QP exports vary:
+ *   - "Booking.com B.V. (Agent)"  → Booking
+ *   - "Agoda Company Pte Ltd."    → Agoda
+ *   - "Expedia Group" / "Expedia" → Expedia
+ *
+ * Returns one of 'Expedia' | 'Booking' | 'Agoda', or null if no match.
+ */
+function deriveOta(firstName) {
+    if (!firstName) return null;
+    const lower = String(firstName).toLowerCase();
+    if (lower.includes('expedia')) return 'Expedia';
+    if (lower.includes('booking')) return 'Booking';
+    if (lower.includes('agoda')) return 'Agoda';
+    return null;
+}
+
 function parseAmount(raw) {
     if (raw === null || raw === undefined || raw === '') return undefined;
     const cleaned = String(raw).replace(/[$,\s]/g, '');
@@ -122,6 +140,11 @@ function mapRowToDocument(row) {
             doc[dbField] = String(raw).trim();
         }
     }
+
+    // Derive OTA from the customer first_name (Excel: FirstName).
+    const ota = deriveOta(doc.first_name);
+    if (ota) doc.ota = ota;
+
     return doc;
 }
 
@@ -172,4 +195,5 @@ module.exports = {
     parseRows,
     mapRowToDocument,
     extractReportedDate,
+    deriveOta,
 };

@@ -62,6 +62,7 @@ const FILTERABLE_FIELDS = {
     csc_results: 'enum',
     entry_method: 'enum',
     service_type: 'enum',
+    ota: 'enum',
 
     // real Date columns
     reported_date: 'date',

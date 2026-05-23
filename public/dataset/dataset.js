@@ -7,6 +7,7 @@
     const COLUMNS = [
         { key: 'order_id', label: 'Reservation ID', type: 'id', filter: { kind: 'text' } },
         { key: 'hotel', label: 'Hotel', type: 'hotel', filter: { kind: 'text', field: 'dba' } },
+        { key: 'ota', label: 'OTA', type: 'ota', filter: { kind: 'enum' } },
         { key: 'amount', label: 'Amount', type: 'amount', filter: { kind: 'number' } },
         { key: 'reported_date', label: 'Reported Date', type: 'date', filter: { kind: 'date' } },
         { key: 'time', label: 'Transaction Time', type: 'time', filter: { kind: 'text' } },
@@ -53,6 +54,30 @@
         sortAsc: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 4h6M3 8h4M3 12h2M11 4v9M9 11l2 2 2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
         sortDesc: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 4h2M3 8h4M3 12h6M11 13V4M9 6l2-2 2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
         search: '<svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    };
+
+    // OTA brand definitions — favicon-style SVG + brand colors used for badges
+    const OTA_BRANDS = {
+        Expedia: {
+            slug: 'expedia',
+            icon:
+                '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+                '<circle cx="12" cy="12" r="12" fill="#FFC72C"/>' +
+                '<path d="M6 11.5l4.5-2v1.6h7v1.8h-7v1.6L6 12.5z" fill="#003263"/>' +
+                '</svg>',
+        },
+        Booking: {
+            slug: 'booking',
+            icon:
+                '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+                '<rect width="24" height="24" rx="5" fill="#003580"/>' +
+                '<text x="12" y="17.5" font-size="13.5" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif" fill="#FEBA02">B.</text>' +
+                '</svg>',
+        },
+        Agoda: {
+            slug: 'agoda',
+            icon: '<img src="/assets/agoda-favicon.png" alt="Agoda" />',
+        },
     };
 
     // ============== DOM refs ==============
@@ -110,6 +135,18 @@
         // Pull out the HH:MM[:SS][ AM/PM] block — discard any date prefix.
         const match = str.match(/(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)/);
         return match ? match[1].trim() : str;
+    }
+
+    function renderOtaBadge(value) {
+        const v = String(value || '').trim();
+        const brand = OTA_BRANDS[v];
+        if (!brand) return escapeHtml(v);
+        return `
+            <span class="cell-badge ota ota-${brand.slug}">
+                <span class="ota-icon">${brand.icon}</span>
+                ${escapeHtml(v)}
+            </span>
+        `;
     }
 
     function formatExpiry(value) {
@@ -178,6 +215,9 @@
                     html: `<a class="cell-link" href="${href}" title="Open in Files">${safe}</a>`,
                     cls: '',
                 };
+            }
+            case 'ota': {
+                return { html: renderOtaBadge(value), cls: '' };
             }
             case 'id':
             case 'copyable': {
@@ -496,6 +536,7 @@
         {
             title: 'Transaction',
             fields: [
+                { key: 'ota', label: 'OTA', render: 'ota' },
                 { key: 'transaction_id', label: 'Trans. ID' },
                 { key: 'transaction_date_time_local', label: 'Trans. Date/Time' },
                 { key: 'transaction_date_local', label: 'Trans. Date' },
@@ -705,6 +746,8 @@
         } else if (field.render === 'file-link') {
             const safe = escapeHtml(String(value));
             html = `<a class="cell-link" href="/file-upload?q=${encodeURIComponent(String(value))}" title="Open in Files">${safe}</a>`;
+        } else if (field.render === 'ota') {
+            html = renderOtaBadge(value);
         } else if (field.formatter) {
             html = escapeHtml(field.formatter(value));
         } else {

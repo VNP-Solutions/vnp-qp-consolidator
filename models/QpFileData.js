@@ -12,6 +12,12 @@ const qpFileDataSchema = new mongoose.Schema(
         file_url: String,
         row_number: Number,
         reported_date: { type: Date, index: true },
+        ota: {
+            type: String,
+            enum: [null, 'Expedia', 'Booking', 'Agoda'],
+            default: null,
+            index: true,
+        },
 
         // QP report fields
         mid: { type: String, index: true },

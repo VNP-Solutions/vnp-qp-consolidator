@@ -212,6 +212,12 @@ module.exports = {
                     file_url: { type: 'string' },
                     row_number: { type: 'integer' },
                     reported_date: { type: 'string', format: 'date-time', nullable: true },
+                    ota: {
+                        type: 'string',
+                        nullable: true,
+                        enum: [null, 'Expedia', 'Booking', 'Agoda'],
+                        description: 'Online travel agency derived from the FirstName field at upload time.',
+                    },
                     mid: { type: 'string' },
                     dba: { type: 'string' },
                     transaction_date_time_local: { type: 'string' },
