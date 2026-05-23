@@ -1,38 +1,46 @@
 (() => {
     // ============== Column config ==============
     // `type` controls cell formatting + extra cell classes.
+    // `filter.kind` controls the popover UI ('text' | 'number' | 'enum' | 'date').
+    // `filter.field` lets a display column (e.g. Hotel) filter on a real DB
+    // field (`dba`) when it doesn't directly correspond to one.
     const COLUMNS = [
-        { key: 'order_id', label: 'Reservation ID', type: 'id' },
-        { key: 'hotel', label: 'Hotel', type: 'hotel' },
-        { key: 'amount', label: 'Amount', type: 'amount' },
-        { key: 'reported_date', label: 'Reported Date', type: 'date' },
-        { key: 'time', label: 'Transaction Time', type: 'time' },
-        { key: 'status', label: 'Status', type: 'badge', successWhen: 'settled' },
-        { key: 'response', label: 'Response', type: 'badge', successWhen: 'success' },
-        { key: 'first_name', label: 'First Name' },
-        { key: 'account', label: 'Card Last 4' },
-        { key: 'account_expiration', label: 'Card Expiry', type: 'expiry' },
-        { key: 'transaction_id', label: 'Trans. ID', type: 'copyable' },
-        { key: 'response_text', label: 'Response Text' },
-        { key: 'avs_results', label: 'AVS', type: 'badge', codes: 'AVS', codeStyle: true },
-        { key: 'csc_results', label: 'CSC', type: 'badge', codes: 'CSC', codeStyle: true },
-        { key: 'type', label: 'Type' },
-        { key: 'payment_type', label: 'Payment Type' },
-        { key: 'auth_code', label: 'Auth Code' },
-        { key: 'batch_id', label: 'Batch ID' },
-        { key: 'processor_id', label: 'Processor ID' },
-        { key: 'address_one', label: 'Address 1' },
-        { key: 'address_two', label: 'Address 2' },
-        { key: 'city', label: 'City' },
-        { key: 'state', label: 'State' },
-        { key: 'zip_code', label: 'ZIP' },
-        { key: 'country', label: 'Country' },
-        { key: 'entry_method', label: 'Entry', type: 'badge', codes: 'ENTRY' },
-        { key: 'service_type', label: 'Service' },
-        { key: 'descriptor_dba', label: 'Desc. DBA' },
-        { key: 'descriptor_phone_number', label: 'Desc. Phone' },
-        { key: 'file_name', label: 'Source File', type: 'file-link' },
+        { key: 'order_id', label: 'Reservation ID', type: 'id', filter: { kind: 'text' } },
+        { key: 'hotel', label: 'Hotel', type: 'hotel', filter: { kind: 'text', field: 'dba' } },
+        { key: 'amount', label: 'Amount', type: 'amount', filter: { kind: 'number' } },
+        { key: 'reported_date', label: 'Reported Date', type: 'date', filter: { kind: 'date' } },
+        { key: 'time', label: 'Transaction Time', type: 'time', filter: { kind: 'text' } },
+        { key: 'status', label: 'Status', type: 'badge', successWhen: 'settled', filter: { kind: 'enum' } },
+        { key: 'response', label: 'Response', type: 'badge', successWhen: 'success', filter: { kind: 'enum' } },
+        { key: 'first_name', label: 'First Name', filter: { kind: 'text' } },
+        { key: 'account', label: 'Card Last 4', filter: { kind: 'text' } },
+        { key: 'account_expiration', label: 'Card Expiry', type: 'expiry', filter: { kind: 'text' } },
+        { key: 'transaction_id', label: 'Trans. ID', type: 'copyable', filter: { kind: 'text' } },
+        { key: 'response_text', label: 'Response Text', filter: { kind: 'text' } },
+        { key: 'avs_results', label: 'AVS', type: 'badge', codes: 'AVS', codeStyle: true, filter: { kind: 'enum' } },
+        { key: 'csc_results', label: 'CSC', type: 'badge', codes: 'CSC', codeStyle: true, filter: { kind: 'enum' } },
+        { key: 'type', label: 'Type', filter: { kind: 'enum' } },
+        { key: 'payment_type', label: 'Payment Type', filter: { kind: 'enum' } },
+        { key: 'auth_code', label: 'Auth Code', filter: { kind: 'text' } },
+        { key: 'batch_id', label: 'Batch ID', filter: { kind: 'text' } },
+        { key: 'processor_id', label: 'Processor ID', filter: { kind: 'text' } },
+        { key: 'address_one', label: 'Address 1', filter: { kind: 'text' } },
+        { key: 'address_two', label: 'Address 2', filter: { kind: 'text' } },
+        { key: 'city', label: 'City', filter: { kind: 'text' } },
+        { key: 'state', label: 'State', filter: { kind: 'text' } },
+        { key: 'zip_code', label: 'ZIP', filter: { kind: 'text' } },
+        { key: 'country', label: 'Country', filter: { kind: 'text' } },
+        { key: 'entry_method', label: 'Entry', type: 'badge', codes: 'ENTRY', filter: { kind: 'enum' } },
+        { key: 'service_type', label: 'Service', filter: { kind: 'enum' } },
+        { key: 'descriptor_dba', label: 'Desc. DBA', filter: { kind: 'text' } },
+        { key: 'descriptor_phone_number', label: 'Desc. Phone', filter: { kind: 'text' } },
+        { key: 'file_name', label: 'Source File', type: 'file-link', filter: { kind: 'text' } },
     ];
+
+    // Field a column filters on (key, unless overridden by filter.field)
+    function filterField(col) {
+        return (col.filter && col.filter.field) || col.key;
+    }
 
     const ICONS = {
         check: '<svg viewBox="0 0 16 16"><path d="M3 8L7 12L13 5"/></svg>',
@@ -40,6 +48,11 @@
         emptyTable: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><line x1="3" y1="11" x2="21" y2="11"/><line x1="9" y1="6" x2="9" y2="20"/></svg>',
         copy: '<svg viewBox="0 0 16 16"><rect x="4.5" y="4.5" width="9" height="10.5" rx="1.4"/><path d="M9 1.5H3.5C2.67 1.5 2 2.17 2 3v9"/></svg>',
         copyCheck: '<svg viewBox="0 0 16 16"><path d="M3 8L7 12L13 5"/></svg>',
+        funnel: '<svg viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12L9.5 9v4l-3-1.5V9L2 3.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+        funnelFilled: '<svg viewBox="0 0 16 16"><path d="M2 3.5h12L9.5 9v4l-3-1.5V9L2 3.5z" fill="currentColor"/></svg>',
+        sortAsc: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 4h6M3 8h4M3 12h2M11 4v9M9 11l2 2 2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        sortDesc: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 4h2M3 8h4M3 12h6M11 13V4M9 6l2-2 2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        search: '<svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
     };
 
     // ============== DOM refs ==============
@@ -58,6 +71,14 @@
     let currentPage = 1;
     let searchQuery = '';
     let loadSeq = 0;
+
+    // Per-column filters keyed by Mongo field (not column key — see filterField).
+    // Shape per kind:
+    //   text/enum: { op: 'in', value: [...] } | { op: 'contains', value }
+    //   number:    { op: 'eq'|'ne'|'gt'|'gte'|'lt'|'lte', value } | { op: 'between', min, max }
+    //   date:      { after: 'YYYY-MM-DD', before: 'YYYY-MM-DD' }
+    let filterState = {};
+    let sortState = null; // { key, dir }
 
     // ============== Auth helper ==============
     function getToken() {
@@ -207,9 +228,22 @@
 
     // ============== Rendering ==============
     function renderHead() {
-        theadRow.innerHTML = COLUMNS.map(
-            (col) => `<th>${escapeHtml(col.label)}</th>`
-        ).join('');
+        theadRow.innerHTML = COLUMNS.map((col) => {
+            if (!col.filter) {
+                return `<th><span class="th-label">${escapeHtml(col.label)}</span></th>`;
+            }
+            const field = filterField(col);
+            const filterActive = !!filterState[field];
+            const sortActive = sortState && sortState.key === field;
+            const activeCls = filterActive || sortActive ? ' active' : '';
+            return `
+                <th>
+                    <span class="th-label">${escapeHtml(col.label)}</span>
+                    <button class="filter-btn${activeCls}" data-filter-col="${col.key}" aria-label="Filter ${escapeHtml(col.label)}">${
+                        filterActive ? ICONS.funnelFilled : ICONS.funnel
+                    }</button>
+                </th>`;
+        }).join('');
     }
 
     function renderRows(rows) {
@@ -364,13 +398,16 @@
         const seq = ++loadSeq;
         tbody.classList.add('loading');
         try {
-            const params = new URLSearchParams();
-            params.set('limit', String(PAGE_SIZE));
-            params.set('skip', String((currentPage - 1) * PAGE_SIZE));
-            if (searchQuery) params.set('q', searchQuery);
-
-            const res = await fetch(`/api/dataset?${params.toString()}`, {
-                headers: authHeaders(),
+            const res = await fetch('/api/dataset/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({
+                    limit: PAGE_SIZE,
+                    skip: (currentPage - 1) * PAGE_SIZE,
+                    search: searchQuery || undefined,
+                    filters: filterState,
+                    sort: sortState ? [sortState] : [],
+                }),
             });
             if (res.status === 401) {
                 window.location.replace('/login');
@@ -392,6 +429,7 @@
             totalRows = data.total || 0;
             renderRows(currentRows);
             renderPagination();
+            renderHead();
         } catch (e) {
             console.error('Failed to load dataset', e);
             showToast('error', 'Could not load the dataset.');
@@ -709,6 +747,485 @@
         if (e.key === 'Escape') closeDetailsModal();
         else if (e.key === 'ArrowLeft') navigateDetails(-1);
         else if (e.key === 'ArrowRight') navigateDetails(1);
+    });
+
+    // ============================================================
+    //                    Filter Popover
+    // ============================================================
+    const popoverEl = document.getElementById('filter-popover');
+    // Local state held inside the open popover; commits to filterState/sortState on Apply.
+    let popoverCtx = null; // { col, field, draftFilter, draftSort, distinctCache, searchTerm }
+    let distinctReqSeq = 0;
+
+    // Header clicks → open the popover for that column.
+    theadRow.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        e.stopPropagation();
+        const colKey = btn.dataset.filterCol;
+        const col = COLUMNS.find((c) => c.key === colKey);
+        if (!col || !col.filter) return;
+
+        if (popoverCtx && popoverCtx.col === col) {
+            closePopover();
+            return;
+        }
+        openPopover(col, btn);
+    });
+
+    function openPopover(col, anchorEl) {
+        const field = filterField(col);
+        const existingFilter = filterState[field] ? { ...filterState[field] } : null;
+        const existingSort =
+            sortState && sortState.key === field ? { ...sortState } : null;
+
+        popoverCtx = {
+            col,
+            field,
+            anchorEl,
+            draftFilter: existingFilter,
+            draftSort: existingSort,
+            searchTerm: '',
+            distinctValues: [],
+            distinctTotal: 0,
+            distinctShown: 0,
+            distinctLoading: true,
+        };
+
+        popoverEl.hidden = false;
+        renderPopover();
+        positionPopover(anchorEl);
+        // Trigger fade-in
+        // eslint-disable-next-line no-unused-expressions
+        popoverEl.offsetHeight;
+        popoverEl.classList.add('visible');
+
+        if (col.filter.kind === 'text' || col.filter.kind === 'enum') {
+            loadDistinct();
+        }
+        if (col.filter.kind === 'number' || col.filter.kind === 'text') {
+            // Number-list mode + auto-focus value input
+            setTimeout(() => {
+                const focusEl = popoverEl.querySelector('[data-autofocus]');
+                if (focusEl) focusEl.focus();
+            }, 30);
+        }
+    }
+
+    function closePopover() {
+        popoverEl.classList.remove('visible');
+        setTimeout(() => {
+            if (!popoverEl.classList.contains('visible')) {
+                popoverEl.hidden = true;
+                popoverEl.innerHTML = '';
+                popoverCtx = null;
+            }
+        }, 180);
+    }
+
+    function positionPopover(anchorEl) {
+        const rect = anchorEl.getBoundingClientRect();
+        const popoverWidth = 320;
+        const margin = 12;
+
+        // Default: align left edge of popover with left edge of header (with small offset)
+        let left = rect.left - 8;
+        // Keep within viewport
+        if (left + popoverWidth > window.innerWidth - margin) {
+            left = window.innerWidth - popoverWidth - margin;
+        }
+        if (left < margin) left = margin;
+
+        const top = rect.bottom + 6;
+        popoverEl.style.left = `${left}px`;
+        popoverEl.style.top = `${top}px`;
+    }
+
+    function renderPopover() {
+        if (!popoverCtx) return;
+        const { col } = popoverCtx;
+        const kind = col.filter.kind;
+
+        popoverEl.innerHTML = `
+            <div class="filter-popover-header">${escapeHtml(col.label)}</div>
+            <div class="filter-popover-body">
+                ${kind !== 'enum' ? renderSortSection(kind) : ''}
+                ${renderFilterSection(kind)}
+            </div>
+            <div class="filter-popover-footer">
+                ${
+                    isFilterDirty()
+                        ? '<button class="filter-link" data-action="clear-filter">Clear filter</button>'
+                        : ''
+                }
+                <button class="filter-apply-btn" data-action="apply">Apply Filter</button>
+            </div>
+        `;
+        attachPopoverHandlers();
+    }
+
+    function renderSortSection(kind) {
+        const labels = kind === 'number'
+            ? { asc: 'Sort Smallest to Largest', desc: 'Sort Largest to Smallest' }
+            : kind === 'date'
+            ? { asc: 'Sort Oldest to Newest', desc: 'Sort Newest to Oldest' }
+            : { asc: 'Sort A to Z', desc: 'Sort Z to A' };
+
+        const dir = popoverCtx.draftSort ? popoverCtx.draftSort.dir : null;
+
+        return `
+            <div class="filter-sort-section">
+                <button class="filter-sort-btn${dir === 'asc' ? ' active' : ''}" data-action="sort" data-dir="asc">
+                    ${ICONS.sortAsc}<span>${escapeHtml(labels.asc)}</span>
+                </button>
+                <button class="filter-sort-btn${dir === 'desc' ? ' active' : ''}" data-action="sort" data-dir="desc">
+                    ${ICONS.sortDesc}<span>${escapeHtml(labels.desc)}</span>
+                </button>
+            </div>
+        `;
+    }
+
+    function renderFilterSection(kind) {
+        switch (kind) {
+            case 'text':
+            case 'enum':
+                return renderListFilter();
+            case 'number':
+                return renderNumberFilter();
+            case 'date':
+                return renderDateFilter();
+            default:
+                return '';
+        }
+    }
+
+    function renderListFilter() {
+        const draft = popoverCtx.draftFilter;
+        // When no filter is applied, treat every visible value as implicitly
+        // selected — mirrors the real state of the table (everything shown).
+        const isUnfilteredDefault = !draft;
+        const selected = Array.isArray(draft && draft.value) ? draft.value : [];
+        const selectedSet = new Set(selected.map(String));
+
+        let optionsHtml;
+        if (popoverCtx.distinctLoading) {
+            optionsHtml = `<div class="filter-loading">Loading values…</div>`;
+        } else if (!popoverCtx.distinctValues.length) {
+            optionsHtml = `<div class="filter-empty">No values found</div>`;
+        } else {
+            optionsHtml = popoverCtx.distinctValues
+                .map((v) => {
+                    const safe = escapeHtml(String(v));
+                    const isChecked =
+                        isUnfilteredDefault || selectedSet.has(String(v));
+                    return `
+                        <label class="filter-check">
+                            <input type="checkbox" data-action="toggle-value" data-value="${safe}" ${isChecked ? 'checked' : ''}>
+                            <span class="filter-check-box"></span>
+                            <span class="filter-check-label">${safe}</span>
+                        </label>
+                    `;
+                })
+                .join('');
+        }
+
+        const selectedCount = isUnfilteredDefault
+            ? popoverCtx.distinctTotal
+            : selectedSet.size;
+        const totalLabel = popoverCtx.distinctTotal
+            ? `${selectedCount} / ${popoverCtx.distinctTotal}`
+            : '—';
+
+        return `
+            <div class="filter-section">
+                <div class="filter-section-label">Filter by Value</div>
+                <div class="filter-search-wrap">
+                    <span class="filter-search-icon">${ICONS.search}</span>
+                    <input type="text" class="filter-search-input" placeholder="Search..." data-action="search" data-autofocus value="${escapeHtml(popoverCtx.searchTerm)}">
+                </div>
+                <div class="filter-actions-row">
+                    <div class="filter-actions-left">
+                        <button class="filter-link primary" data-action="select-all">Select All</button>
+                        <button class="filter-link" data-action="clear-values">Clear</button>
+                    </div>
+                    <span class="filter-count">${totalLabel}</span>
+                </div>
+                <div class="filter-checkboxes">${optionsHtml}</div>
+            </div>
+        `;
+    }
+
+    function renderNumberFilter() {
+        const draft = popoverCtx.draftFilter || {};
+        const op = draft.op || 'eq';
+        const value = draft.value != null ? String(draft.value) : '';
+        const min = draft.min != null ? String(draft.min) : '';
+        const max = draft.max != null ? String(draft.max) : '';
+
+        const valueInput = op === 'between'
+            ? `
+                <div class="filter-row-2">
+                    <input type="number" step="any" class="filter-text-input" placeholder="Min" data-action="set-min" data-autofocus value="${escapeHtml(min)}">
+                    <input type="number" step="any" class="filter-text-input" placeholder="Max" data-action="set-max" value="${escapeHtml(max)}">
+                </div>`
+            : `<input type="number" step="any" class="filter-text-input" placeholder="Enter value" data-action="set-value" data-autofocus value="${escapeHtml(value)}">`;
+
+        return `
+            <div class="filter-section">
+                <div class="filter-section-label">Condition</div>
+                <select class="filter-select" data-action="set-op">
+                    <option value="eq" ${op === 'eq' ? 'selected' : ''}>Equals (=)</option>
+                    <option value="ne" ${op === 'ne' ? 'selected' : ''}>Not equals (≠)</option>
+                    <option value="gt" ${op === 'gt' ? 'selected' : ''}>Greater than (&gt;)</option>
+                    <option value="gte" ${op === 'gte' ? 'selected' : ''}>Greater or equal (≥)</option>
+                    <option value="lt" ${op === 'lt' ? 'selected' : ''}>Less than (&lt;)</option>
+                    <option value="lte" ${op === 'lte' ? 'selected' : ''}>Less or equal (≤)</option>
+                    <option value="between" ${op === 'between' ? 'selected' : ''}>Between</option>
+                </select>
+                <div class="filter-section-label" style="margin-top: 14px">Value</div>
+                ${valueInput}
+            </div>
+        `;
+    }
+
+    function renderDateFilter() {
+        const draft = popoverCtx.draftFilter || {};
+        const after = draft.after || '';
+        const before = draft.before || '';
+        return `
+            <div class="filter-section">
+                <div class="filter-section-label">After</div>
+                <input type="date" class="filter-date-input" data-action="set-after" data-autofocus value="${escapeHtml(after)}">
+                <div class="filter-section-label" style="margin-top: 14px">Before</div>
+                <input type="date" class="filter-date-input" data-action="set-before" value="${escapeHtml(before)}">
+            </div>
+        `;
+    }
+
+    function attachPopoverHandlers() {
+        popoverEl.querySelectorAll('[data-action]').forEach((el) => {
+            const action = el.dataset.action;
+            switch (action) {
+                case 'sort':
+                    el.addEventListener('click', () => {
+                        const dir = el.dataset.dir;
+                        if (popoverCtx.draftSort && popoverCtx.draftSort.dir === dir) {
+                            popoverCtx.draftSort = null;
+                        } else {
+                            popoverCtx.draftSort = { key: popoverCtx.field, dir };
+                        }
+                        renderPopover();
+                    });
+                    break;
+                case 'search':
+                    el.addEventListener('input', debounce(() => {
+                        popoverCtx.searchTerm = el.value;
+                        loadDistinct();
+                    }, 200));
+                    break;
+                case 'toggle-value':
+                    el.addEventListener('change', () => {
+                        const v = el.dataset.value;
+                        // If draft is null, the user was looking at the
+                        // default "all checked" state — materialise it into
+                        // an explicit list before mutating.
+                        let arr;
+                        if (!popoverCtx.draftFilter) {
+                            arr = popoverCtx.distinctValues.map(String);
+                        } else if (Array.isArray(popoverCtx.draftFilter.value)) {
+                            arr = popoverCtx.draftFilter.value.slice();
+                        } else {
+                            arr = [];
+                        }
+                        const idx = arr.findIndex((x) => String(x) === String(v));
+                        if (el.checked && idx === -1) arr.push(v);
+                        else if (!el.checked && idx !== -1) arr.splice(idx, 1);
+
+                        // Re-collapse to "no filter" when everything is
+                        // selected again — preserves the parity with the
+                        // unfiltered default.
+                        if (arr.length === popoverCtx.distinctValues.length) {
+                            popoverCtx.draftFilter = null;
+                        } else {
+                            popoverCtx.draftFilter = { op: 'in', value: arr };
+                        }
+                        renderPopover();
+                    });
+                    break;
+                case 'select-all':
+                    el.addEventListener('click', () => {
+                        // "Select All" === no filter (all values implicitly
+                        // selected). Same visual outcome as the default state.
+                        popoverCtx.draftFilter = null;
+                        renderPopover();
+                    });
+                    break;
+                case 'clear-values':
+                    el.addEventListener('click', () => {
+                        // "Clear" deselects every checkbox so the user can
+                        // build a selection from scratch. Applying with an
+                        // empty selection is treated as "no filter" by
+                        // hasFilterValue() — same as Excel's behaviour.
+                        popoverCtx.draftFilter = { op: 'in', value: [] };
+                        renderPopover();
+                    });
+                    break;
+                case 'set-op':
+                    el.addEventListener('change', () => {
+                        const op = el.value;
+                        const prev = popoverCtx.draftFilter || {};
+                        popoverCtx.draftFilter = { op, value: prev.value, min: prev.min, max: prev.max };
+                        renderPopover();
+                    });
+                    break;
+                case 'set-value':
+                    el.addEventListener('input', () => {
+                        const v = el.value;
+                        const prev = popoverCtx.draftFilter || { op: 'eq' };
+                        popoverCtx.draftFilter = v === '' ? null : { ...prev, value: v };
+                    });
+                    break;
+                case 'set-min':
+                    el.addEventListener('input', () => {
+                        const prev = popoverCtx.draftFilter || { op: 'between' };
+                        popoverCtx.draftFilter = { ...prev, op: 'between', min: el.value };
+                    });
+                    break;
+                case 'set-max':
+                    el.addEventListener('input', () => {
+                        const prev = popoverCtx.draftFilter || { op: 'between' };
+                        popoverCtx.draftFilter = { ...prev, op: 'between', max: el.value };
+                    });
+                    break;
+                case 'set-after':
+                    el.addEventListener('input', () => {
+                        const prev = popoverCtx.draftFilter || {};
+                        popoverCtx.draftFilter = { ...prev, after: el.value || undefined };
+                        if (!popoverCtx.draftFilter.after && !popoverCtx.draftFilter.before) popoverCtx.draftFilter = null;
+                    });
+                    break;
+                case 'set-before':
+                    el.addEventListener('input', () => {
+                        const prev = popoverCtx.draftFilter || {};
+                        popoverCtx.draftFilter = { ...prev, before: el.value || undefined };
+                        if (!popoverCtx.draftFilter.after && !popoverCtx.draftFilter.before) popoverCtx.draftFilter = null;
+                    });
+                    break;
+                case 'clear-filter':
+                    el.addEventListener('click', () => {
+                        popoverCtx.draftFilter = null;
+                        applyAndClose();
+                    });
+                    break;
+                case 'apply':
+                    el.addEventListener('click', applyAndClose);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        // Stop clicks inside the popover from bubbling to the global close
+        popoverEl.addEventListener('click', stopProp, { once: true });
+    }
+
+    function stopProp(e) {
+        // Re-attach (once was a one-shot above). Keep clicks contained.
+        e.stopPropagation();
+        popoverEl.addEventListener('click', stopProp, { once: true });
+    }
+
+    function applyAndClose() {
+        if (!popoverCtx) return;
+        const { field, draftFilter, draftSort } = popoverCtx;
+        if (draftFilter && hasFilterValue(draftFilter, popoverCtx.col.filter.kind)) {
+            filterState[field] = draftFilter;
+        } else {
+            delete filterState[field];
+        }
+        sortState = draftSort || (sortState && sortState.key === field ? null : sortState);
+        currentPage = 1;
+        closePopover();
+        loadData();
+    }
+
+    function hasFilterValue(f, kind) {
+        if (!f) return false;
+        if (kind === 'text' || kind === 'enum') {
+            if (f.op === 'in') return Array.isArray(f.value) && f.value.length > 0;
+            return f.value != null && f.value !== '';
+        }
+        if (kind === 'number') {
+            if (f.op === 'between') return f.min !== undefined || f.max !== undefined;
+            return f.value !== undefined && f.value !== '';
+        }
+        if (kind === 'date') return !!(f.after || f.before);
+        return false;
+    }
+
+    function isFilterDirty() {
+        if (!popoverCtx) return false;
+        const { field } = popoverCtx;
+        return !!filterState[field] || (sortState && sortState.key === field);
+    }
+
+    async function loadDistinct() {
+        if (!popoverCtx) return;
+        const seq = ++distinctReqSeq;
+        popoverCtx.distinctLoading = true;
+        renderPopover();
+        try {
+            const params = new URLSearchParams({ limit: '200' });
+            if (popoverCtx.searchTerm) params.set('search', popoverCtx.searchTerm);
+            const res = await fetch(
+                `/api/dataset/distinct/${popoverCtx.field}?${params}`,
+                { headers: authHeaders() }
+            );
+            if (!res.ok) throw new Error('distinct fetch failed');
+            const data = await res.json();
+            if (seq !== distinctReqSeq || !popoverCtx) return;
+            popoverCtx.distinctValues = data.values || [];
+            popoverCtx.distinctTotal = data.total || 0;
+            popoverCtx.distinctShown = data.shown || (data.values || []).length;
+            popoverCtx.distinctLoading = false;
+            renderPopover();
+        } catch (e) {
+            console.error(e);
+            if (seq !== distinctReqSeq || !popoverCtx) return;
+            popoverCtx.distinctLoading = false;
+            popoverCtx.distinctValues = [];
+            renderPopover();
+        }
+    }
+
+    function debounce(fn, ms) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), ms);
+        };
+    }
+
+    // Global close listeners
+    document.addEventListener('click', (e) => {
+        if (popoverEl.hidden) return;
+        if (popoverEl.contains(e.target)) return;
+        if (e.target.closest('.filter-btn')) return; // header button handles itself
+        closePopover();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (!popoverEl.hidden && e.key === 'Escape') {
+            e.stopPropagation();
+            closePopover();
+        }
+    });
+    window.addEventListener('resize', () => {
+        if (!popoverEl.hidden && popoverCtx) positionPopover(popoverCtx.anchorEl);
+    });
+    // When the table scrolls horizontally, re-anchor the popover so it follows
+    // its header button.
+    document.getElementById('data-table-wrap').addEventListener('scroll', () => {
+        if (!popoverEl.hidden && popoverCtx) positionPopover(popoverCtx.anchorEl);
     });
 
     // ============== Init ==============

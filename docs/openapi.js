@@ -547,7 +547,7 @@ module.exports = {
                 tags: ['Dataset'],
                 summary: 'List parsed QP transaction rows for the authenticated user',
                 description:
-                    'Returns all QpFileData rows belonging to files this user owns. Search across `order_id` (reservation id), `mid`, and `dba` via the `q` parameter.',
+                    'Returns all QpFileData rows belonging to files this user owns. Search across `order_id` (reservation id), `mid`, and `dba` via the `q` parameter. For per-column filters use `POST /dataset/query` instead.',
                 security: [{ bearerAuth: [] }],
                 parameters: [
                     { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } },
@@ -572,6 +572,91 @@ module.exports = {
                         description: 'Missing/invalid token',
                         content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
                     },
+                },
+            },
+        },
+        '/dataset/query': {
+            post: {
+                tags: ['Dataset'],
+                summary: 'Advanced filtered + sorted dataset query',
+                description:
+                    'Per-column filters (text/enum/number/date) and sort. Used by the Dataset table\'s Excel-style column filters.\n\n**Filter shape** (under `filters[<field>]`):\n- text/enum: `{ op: "in"|"contains"|"startswith"|"endswith"|"eq", value }`\n- number: `{ op: "eq"|"ne"|"gt"|"gte"|"lt"|"lte"|"in", value }` or `{ op: "between", min, max }`\n- date: `{ after?: "YYYY-MM-DD", before?: "YYYY-MM-DD" }`\n\nUnknown fields and invalid operators are silently ignored.',
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: false,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    filters: {
+                                        type: 'object',
+                                        additionalProperties: { type: 'object' },
+                                        example: {
+                                            mid: { op: 'in', value: ['12345', '67890'] },
+                                            amount: { op: 'gte', value: 100 },
+                                            reported_date: { after: '2026-01-01', before: '2026-12-31' },
+                                        },
+                                    },
+                                    sort: {
+                                        type: 'array',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                key: { type: 'string', example: 'amount' },
+                                                dir: { type: 'string', enum: ['asc', 'desc'], example: 'desc' },
+                                            },
+                                        },
+                                    },
+                                    search: { type: 'string', description: 'Global quick search across order_id, mid, dba.' },
+                                    limit: { type: 'integer', default: 50 },
+                                    skip: { type: 'integer', default: 0 },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: 'Paginated rows',
+                        content: {
+                            'application/json': { schema: { $ref: '#/components/schemas/ListDatasetResponse' } },
+                        },
+                    },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
+        },
+        '/dataset/distinct/{field}': {
+            get: {
+                tags: ['Dataset'],
+                summary: 'List distinct values for a filterable column',
+                description:
+                    'Used by the column filter popovers to populate checkbox lists. Restricted to the user\'s own files. Returns up to `limit` values plus the unfiltered total count for "200 / 2321" UX.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { name: 'field', in: 'path', required: true, schema: { type: 'string' }, description: 'Must be a filterable QpFileData field (e.g. mid, dba, status).' },
+                    { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Optional case-insensitive substring to narrow the value list.' },
+                    { name: 'limit', in: 'query', schema: { type: 'integer', default: 200, maximum: 1000 } },
+                ],
+                responses: {
+                    200: {
+                        description: 'Distinct values',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        values: { type: 'array', items: {} },
+                                        total: { type: 'integer' },
+                                        shown: { type: 'integer' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: 'Field is not filterable', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
                 },
             },
         },
