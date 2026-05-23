@@ -127,7 +127,7 @@
             const message = searchQuery
                 ? `No files match &ldquo;<strong>${escapeHtml(searchQuery)}</strong>&rdquo;. Try a different search.`
                 : 'No files uploaded yet. Drop a QP report above to get started.';
-            tbody.innerHTML = `<tr><td colspan="7"><div class="files-empty">${message}</div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8"><div class="files-empty">${message}</div></td></tr>`;
             filesCount.textContent = searchQuery ? '0 matches' : '0 total';
             return;
         }
@@ -151,6 +151,7 @@
                     </div>
                 </td>
                 <td>${formatBytes(file.size)}</td>
+                <td>${formatDate(file.reported_date)}</td>
                 <td><span class="file-status ${file.status}">${statusLabel(file)}</span></td>
                 <td>${formatDate(file.created_at)}</td>
                 <td>

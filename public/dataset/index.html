@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QP Dataset — VNP QP Consolidator</title>
+    <script>
+        if (!(localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token'))) {
+            window.location.replace('/login');
+        }
+    </script>
+    <link rel="stylesheet" href="/assets/sidebar.css">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+    <link rel="stylesheet" href="dataset.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Sidebar is rendered into this mount by /assets/sidebar.js -->
+        <div data-sidebar-mount data-active="dataset"></div>
+
+        <!-- ============ Main content ============ -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">QP Dataset</h1>
+                    <p class="page-subtitle">Browse and search across every parsed QP transaction row.</p>
+                </div>
+            </header>
+
+            <section class="data-card">
+                <div class="data-card-header">
+                    <div>
+                        <h2 class="data-title">
+                            Transactions
+                            <span class="data-count" id="data-count">0 total</span>
+                        </h2>
+                        <p class="data-sub">Search by Reservation ID, MID, or DBA.</p>
+                    </div>
+                    <div class="data-tools">
+                        <div class="search" id="search">
+                            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+                                <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                            <span class="search-spinner" aria-hidden="true"></span>
+                            <input type="text" id="search-input" placeholder="Search by Reservation ID, MID, or DBA" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-table-wrap" id="data-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr id="data-thead-row"></tr>
+                        </thead>
+                        <tbody id="data-tbody">
+                            <!-- rows injected by dataset.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="data-pagination" id="data-pagination" hidden></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ============ Toast ============ -->
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+        <span class="toast-icon"></span>
+        <span class="toast-text"></span>
+    </div>
+
+    <script src="/assets/sidebar.js"></script>
+    <script src="dataset.js"></script>
+</body>
+</html>

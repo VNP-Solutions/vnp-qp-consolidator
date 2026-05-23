@@ -8,6 +8,7 @@ const { connectDatabase } = require('./services/database');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const datasetRoutes = require('./routes/datasetRoutes');
 const openapiSpec = require('./docs/openapi');
 
 const app = express();
@@ -29,6 +30,7 @@ app.get('/api/docs.json', (req, res) => res.json(openapiSpec));
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/dataset', datasetRoutes);
 
 app.use((err, req, res, next) => {
     console.error(err);
