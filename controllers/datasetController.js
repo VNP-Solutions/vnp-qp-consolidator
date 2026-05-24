@@ -88,6 +88,19 @@ async function stats(req, res, next) {
     }
 }
 
+async function analytics(req, res, next) {
+    try {
+        const period = req.query.period || 'all';
+        const result = await datasetService.getAnalytics({
+            userId: req.userId,
+            period,
+        });
+        return res.json(result);
+    } catch (err) {
+        return next(err);
+    }
+}
+
 async function exportData(req, res, next) {
     try {
         const body = req.body || {};
@@ -122,4 +135,4 @@ async function exportData(req, res, next) {
     }
 }
 
-module.exports = { listData, queryData, distinct, stats, exportData };
+module.exports = { listData, queryData, distinct, stats, analytics, exportData };

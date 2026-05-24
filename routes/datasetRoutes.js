@@ -8,6 +8,7 @@ router.get('/', requireAuth, datasetController.listData);
 router.post('/query', requireAuth, datasetController.queryData);
 router.get('/distinct/:field', requireAuth, datasetController.distinct);
 router.get('/stats', requireAuth, datasetController.stats);
+router.get('/analytics', requireAuth, datasetController.analytics);
 router.post('/export', requireAuth, datasetController.exportData);
 
 module.exports = router;

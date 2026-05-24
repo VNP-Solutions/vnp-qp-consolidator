@@ -389,6 +389,105 @@ async function getByIds({ userId, ids }) {
         .lean();
 }
 
+/**
+ * Aggregate data for the dashboard charts:
+ *   - daily_amounts: per-day amount totals split by OTA (only rows with ota set)
+ *   - by_entry_method: count per entry_method value
+ *   - by_status: count per status value
+ *
+ * All scoped to the user's files and optionally narrowed by `period`
+ * (same semantics as getStats — relative window against reported_date).
+ */
+async function getAnalytics({ userId, period = 'all' }) {
+    const fileIds = await getUserFileIds(userId);
+    if (fileIds.length === 0) {
+        return {
+            period,
+            daily_amounts: [],
+            by_entry_method: {},
+            by_status: {},
+        };
+    }
+
+    const match = { file_id: { $in: fileIds } };
+    const periodMatch = buildPeriodMatch(period);
+    if (periodMatch) match.reported_date = periodMatch;
+
+    const [result] = await QpFileData.aggregate([
+        { $match: match },
+        {
+            $facet: {
+                daily: [
+                    {
+                        $match: {
+                            reported_date: { $ne: null },
+                            ota: { $ne: null },
+                        },
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                date: {
+                                    $dateToString: {
+                                        format: '%Y-%m-%d',
+                                        date: '$reported_date',
+                                        timezone: 'UTC',
+                                    },
+                                },
+                                ota: '$ota',
+                            },
+                            amount: { $sum: '$amount' },
+                        },
+                    },
+                    { $sort: { '_id.date': 1 } },
+                ],
+                by_entry_method: [
+                    { $match: { entry_method: { $ne: null, $ne: '' } } },
+                    {
+                        $group: {
+                            _id: '$entry_method',
+                            count: { $sum: 1 },
+                        },
+                    },
+                ],
+                by_status: [
+                    { $match: { status: { $ne: null, $ne: '' } } },
+                    {
+                        $group: {
+                            _id: '$status',
+                            count: { $sum: 1 },
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+
+    // Pivot daily rows: [{date, ota, amount}] → [{date, Expedia, Booking, Agoda}]
+    const byDate = new Map();
+    for (const entry of (result && result.daily) || []) {
+        const date = entry._id.date;
+        const ota = entry._id.ota;
+        if (!byDate.has(date)) byDate.set(date, { date });
+        byDate.get(date)[ota] = entry.amount;
+    }
+    const daily_amounts = Array.from(byDate.values()).sort((a, b) =>
+        a.date.localeCompare(b.date)
+    );
+
+    const by_entry_method = {};
+    for (const e of (result && result.by_entry_method) || []) {
+        if (e._id) by_entry_method[e._id] = e.count || 0;
+    }
+
+    const by_status = {};
+    for (const e of (result && result.by_status) || []) {
+        if (e._id) by_status[e._id] = e.count || 0;
+    }
+
+    return { period, daily_amounts, by_entry_method, by_status };
+}
+
 module.exports = {
     listData,
     queryData,
@@ -396,6 +495,7 @@ module.exports = {
     getByIds,
     distinctValues,
     getStats,
+    getAnalytics,
     SEARCHABLE_FIELDS,
     FILTERABLE_FIELDS,
 };

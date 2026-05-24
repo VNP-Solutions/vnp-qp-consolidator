@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — VNP QP Consolidator</title>
+    <script>
+        if (!(localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token'))) {
+            window.location.replace('/login');
+        }
+    </script>
+    <link rel="stylesheet" href="/assets/sidebar.css">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div data-sidebar-mount data-active="dashboard"></div>
+
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">A bird's-eye view of your QP transaction data.</p>
+                </div>
+            </header>
+
+            <!-- ============ Period Tabs + Stats ============ -->
+            <section class="stats-section">
+                <div class="stats-controls">
+                    <div class="period-tabs" id="period-tabs">
+                        <button class="period-tab active" type="button" data-period="all">All time</button>
+                        <button class="period-tab" type="button" data-period="year">Year</button>
+                        <button class="period-tab" type="button" data-period="month">Month</button>
+                        <button class="period-tab" type="button" data-period="week">Week</button>
+                    </div>
+                </div>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                    <div class="stat-card stat-skeleton"></div>
+                </div>
+            </section>
+
+            <!-- ============ Charts ============ -->
+            <section class="charts-section">
+                <article class="chart-card chart-card-wide" id="chart-card-daily">
+                    <header class="chart-header">
+                        <div>
+                            <h2 class="chart-title">Daily amount by OTA</h2>
+                            <p class="chart-sub">Totals processed each reported day, split by online travel agency.</p>
+                        </div>
+                        <div class="chart-legend" id="legend-daily"></div>
+                    </header>
+                    <div class="chart-body">
+                        <div class="chart-canvas-wrap" id="chart-daily"></div>
+                        <div class="chart-empty" id="chart-empty-daily" hidden>No data for this period.</div>
+                    </div>
+                </article>
+
+                <article class="chart-card chart-card-donut" id="chart-card-entry">
+                    <header class="chart-header">
+                        <div>
+                            <h2 class="chart-title">Entry method</h2>
+                            <p class="chart-sub">Transactions completed via API vs manually keyed.</p>
+                        </div>
+                    </header>
+                    <div class="chart-body chart-body-donut">
+                        <div class="donut-canvas-wrap">
+                            <div id="chart-entry"></div>
+                            <div class="donut-center" id="center-entry">
+                                <div class="donut-center-value">—</div>
+                                <div class="donut-center-label">total</div>
+                            </div>
+                        </div>
+                        <div class="donut-legend" id="legend-entry"></div>
+                        <div class="chart-empty" id="chart-empty-entry" hidden>No data yet.</div>
+                    </div>
+                </article>
+
+                <article class="chart-card chart-card-donut" id="chart-card-status">
+                    <header class="chart-header">
+                        <div>
+                            <h2 class="chart-title">Transaction status</h2>
+                            <p class="chart-sub">Settled transactions vs everything else.</p>
+                        </div>
+                    </header>
+                    <div class="chart-body chart-body-donut">
+                        <div class="donut-canvas-wrap">
+                            <div id="chart-status"></div>
+                            <div class="donut-center" id="center-status">
+                                <div class="donut-center-value">—</div>
+                                <div class="donut-center-label">total</div>
+                            </div>
+                        </div>
+                        <div class="donut-legend" id="legend-status"></div>
+                        <div class="chart-empty" id="chart-empty-status" hidden>No data yet.</div>
+                    </div>
+                </article>
+            </section>
+
+            <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+                <span class="toast-icon"></span>
+                <span class="toast-text"></span>
+            </div>
+        </main>
+    </div>
+
+    <script src="/assets/sidebar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.0.0/dist/apexcharts.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
