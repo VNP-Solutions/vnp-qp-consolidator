@@ -25,8 +25,34 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: true,
+            // Pending invited users don't have a password until they accept;
+            // every other state must have one.
+            required: function requirePassword() {
+                return this.status !== 'pending';
+            },
             select: false,
+        },
+        status: {
+            type: String,
+            enum: ['active', 'pending', 'revoked'],
+            default: 'active',
+            index: true,
+        },
+        invited_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        invite_token: {
+            type: String,
+            select: false,
+            index: true,
+        },
+        invite_expires_at: {
+            type: Date,
+            select: false,
+        },
+        invite_accepted_at: {
+            type: Date,
         },
         otp_hash: {
             type: String,
@@ -64,6 +90,8 @@ userSchema.methods.toJSON = function toJSON() {
     delete obj.otp_expires_at;
     delete obj.reset_otp_hash;
     delete obj.reset_otp_expires_at;
+    delete obj.invite_token;
+    delete obj.invite_expires_at;
     return obj;
 };
 

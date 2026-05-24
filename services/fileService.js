@@ -57,8 +57,10 @@ async function uploadFile({ userId, file }) {
     return doc;
 }
 
-async function listFiles({ userId, limit = 50, skip = 0, q }) {
-    const query = { uploaded_by: userId };
+// Workspace-wide visibility: any authenticated user can see and act on any
+// file. `uploaded_by` is still recorded for attribution and shown in the UI.
+async function listFiles({ limit = 50, skip = 0, q }) {
+    const query = {};
     if (q && String(q).trim()) {
         const escaped = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         query.original_name = { $regex: escaped, $options: 'i' };
@@ -74,7 +76,7 @@ async function listFiles({ userId, limit = 50, skip = 0, q }) {
     return { items, total, limit, skip };
 }
 
-async function getFile({ userId, fileId }) {
+async function getFile({ fileId }) {
     const file = await UploadedFile.findById(fileId).populate(
         'uploaded_by',
         'first_name last_name email'
@@ -84,24 +86,14 @@ async function getFile({ userId, fileId }) {
         err.statusCode = 404;
         throw err;
     }
-    if (file.uploaded_by._id.toString() !== userId.toString()) {
-        const err = new Error('Forbidden');
-        err.statusCode = 403;
-        throw err;
-    }
     return file;
 }
 
-async function startParse({ userId, fileId }) {
+async function startParse({ fileId }) {
     const file = await UploadedFile.findById(fileId);
     if (!file) {
         const err = new Error('File not found');
         err.statusCode = 404;
-        throw err;
-    }
-    if (file.uploaded_by.toString() !== userId.toString()) {
-        const err = new Error('Forbidden');
-        err.statusCode = 403;
         throw err;
     }
     if (file.status === 'processing') {
@@ -193,16 +185,11 @@ async function runParse(fileId) {
     });
 }
 
-async function startDelete({ userId, fileId }) {
+async function startDelete({ fileId }) {
     const file = await UploadedFile.findById(fileId);
     if (!file) {
         const err = new Error('File not found');
         err.statusCode = 404;
-        throw err;
-    }
-    if (file.uploaded_by.toString() !== userId.toString()) {
-        const err = new Error('Forbidden');
-        err.statusCode = 403;
         throw err;
     }
     if (file.status === 'deleting') {

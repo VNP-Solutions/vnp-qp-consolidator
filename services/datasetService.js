@@ -145,11 +145,12 @@ function buildCondition(kind, filter) {
     return null;
 }
 
-async function getUserFileIds(userId) {
-    const userFiles = await UploadedFile.find({ uploaded_by: userId })
-        .select('_id')
-        .lean();
-    return userFiles.map((f) => f._id);
+// Workspace-wide visibility: every authenticated user sees every file's
+// data. The `userId` argument is kept for API stability but is no longer
+// used as a scoping filter.
+async function getUserFileIds(/* userId */) {
+    const allFiles = await UploadedFile.find({}).select('_id').lean();
+    return allFiles.map((f) => f._id);
 }
 
 function buildSearchOr(search) {

@@ -292,7 +292,9 @@ module.exports = {
         '/users': {
             post: {
                 tags: ['Users'],
-                summary: 'Create a new user',
+                summary: 'Add a user manually (skips email verification)',
+                description: 'Admin endpoint — creates an active user directly with a password set by the caller. Requires auth.',
+                security: [{ bearerAuth: [] }],
                 requestBody: {
                     required: true,
                     content: {
@@ -302,67 +304,133 @@ module.exports = {
                     },
                 },
                 responses: {
-                    201: {
-                        description: 'User created',
-                        content: {
-                            'application/json': { schema: { $ref: '#/components/schemas/User' } },
-                        },
-                    },
-                    400: {
-                        description: 'Validation error',
-                        content: {
-                            'application/json': { schema: { $ref: '#/components/schemas/Error' } },
-                        },
-                    },
-                    409: {
-                        description: 'Email already exists',
-                        content: {
-                            'application/json': { schema: { $ref: '#/components/schemas/Error' } },
-                        },
-                    },
+                    201: { description: 'User created', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+                    400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    409: { description: 'Email already exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
                 },
             },
             get: {
                 tags: ['Users'],
                 summary: 'List users',
-                description: 'List users with optional case-insensitive email filter and sort by creation date.',
+                description: 'List users with optional search (name/email) and status filter.',
+                security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: 'email',
-                        in: 'query',
-                        description: 'Case-insensitive substring match against email',
-                        schema: { type: 'string' },
-                    },
-                    {
-                        name: 'sort',
-                        in: 'query',
-                        description: 'Sort by created_at',
-                        schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
-                    },
-                    {
-                        name: 'limit',
-                        in: 'query',
-                        schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
-                    },
-                    {
-                        name: 'skip',
-                        in: 'query',
-                        schema: { type: 'integer', minimum: 0, default: 0 },
-                    },
+                    { name: 'q', in: 'query', description: 'Case-insensitive match across email, first_name, last_name', schema: { type: 'string' } },
+                    { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'pending', 'revoked'] } },
+                    { name: 'sort', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' } },
+                    { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } },
+                    { name: 'skip', in: 'query', schema: { type: 'integer', minimum: 0, default: 0 } },
                 ],
                 responses: {
-                    200: {
-                        description: 'Paginated list of users',
-                        content: {
-                            'application/json': {
-                                schema: { $ref: '#/components/schemas/ListUsersResponse' },
+                    200: { description: 'Paginated list of users', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListUsersResponse' } } } },
+                },
+            },
+        },
+        '/users/invite': {
+            post: {
+                tags: ['Users'],
+                summary: 'Invite a user via email',
+                description: 'Creates a pending user record and emails them an invite link (`APP_BASE_URL/accept-invite?token=…`) valid for 7 days.',
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'first_name', 'last_name'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    first_name: { type: 'string' },
+                                    last_name: { type: 'string' },
+                                },
                             },
                         },
                     },
                 },
+                responses: {
+                    201: { description: 'Invite created and email sent', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+                    400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    409: { description: 'Active or pending user already exists for that email', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
+        },
+        '/users/invite/preview': {
+            get: {
+                tags: ['Users'],
+                summary: 'Validate an invite token and return the invitee\'s basic info',
+                description: 'Public — used by the /accept-invite page to confirm the link is still valid before showing the password form.',
+                parameters: [
+                    { name: 'token', in: 'query', required: true, schema: { type: 'string' } },
+                ],
+                responses: {
+                    200: {
+                        description: 'Invite is valid',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        email: { type: 'string', format: 'email' },
+                                        first_name: { type: 'string' },
+                                        last_name: { type: 'string' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: { description: 'Token missing', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    404: { description: 'Invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    410: { description: 'Token expired', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
+        },
+        '/users/accept-invite': {
+            post: {
+                tags: ['Users'],
+                summary: 'Accept an invite by setting a password',
+                description: 'Public — burns the invite token, sets the password, and activates the account. The user can then log in normally (with OTP).',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['token', 'password'],
+                                properties: {
+                                    token: { type: 'string' },
+                                    password: { type: 'string', minLength: 8 },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: { description: 'Account activated', content: { 'application/json': { schema: { type: 'object', properties: { email: { type: 'string' } } } } } },
+                    400: { description: 'Token or password missing/invalid', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    404: { description: 'Invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    410: { description: 'Token expired', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
             },
         },
         '/users/{id}': {
+            delete: {
+                tags: ['Users'],
+                summary: 'Revoke a user',
+                description: 'Soft-delete — sets status to `revoked`. The user keeps their record (so their uploaded files still resolve) but can no longer log in. You can re-invite a revoked user to reactivate them.',
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+                ],
+                responses: {
+                    200: { description: 'User revoked', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+                    400: { description: "Tried to revoke own account", content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    401: { description: 'Missing/invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                    404: { description: 'User not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+                },
+            },
             get: {
                 tags: ['Users'],
                 summary: 'Get a user by id (own profile only)',

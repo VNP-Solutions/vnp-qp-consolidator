@@ -44,6 +44,17 @@ async function login({ email, password }) {
         throw err;
     }
 
+    if (user.status === 'revoked') {
+        const err = new Error('Your access has been revoked. Contact an administrator.');
+        err.statusCode = 403;
+        throw err;
+    }
+    if (user.status === 'pending') {
+        const err = new Error('Please accept your email invitation before signing in.');
+        err.statusCode = 403;
+        throw err;
+    }
+
     const matches = await user.comparePassword(password);
     if (!matches) {
         const err = new Error('Invalid email or password');
