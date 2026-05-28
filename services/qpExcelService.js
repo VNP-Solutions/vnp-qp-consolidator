@@ -188,6 +188,71 @@ function extractReportedDate(filename) {
     return d;
 }
 
+/**
+ * Detect whether a filename carries a date RANGE rather than a single date —
+ * e.g. "Consolidated QP Report - 12012025 - 04012026.xlsx" has two 8-digit
+ * stamps. When this is the case we can't stamp every row with one date, so
+ * the parser derives each row's reported_date from its transaction date.
+ */
+function hasDateRange(filename) {
+    if (!filename) return false;
+    const noExt = filename.replace(/\.[^.]+$/, '');
+    const groups = noExt.match(/\d{8}/g) || [];
+    return groups.length >= 2;
+}
+
+function buildUtcDateOnly(year, month, day) {
+    if (!year || !month || !day) return null;
+    if (year < 1900 || year > 2100) return null;
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > 31) return null;
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (
+        d.getUTCFullYear() !== year ||
+        d.getUTCMonth() !== month - 1 ||
+        d.getUTCDate() !== day
+    ) {
+        return null;
+    }
+    return d;
+}
+
+/**
+ * Parse a single date (UTC midnight, date-only) out of a variety of QP
+ * timestamp formats. We only need the calendar date for reporting, so we
+ * read the date portion and ignore the time + fractional seconds + offset.
+ * Handles:
+ *   "2025-12-10 13:06:57.6751172 +00:00"  (ISO-ish, .NET ticks)
+ *   "2025-12-10T13:06:57Z"
+ *   "12/10/2025 1:06 PM"                  (US M/D/Y)
+ */
+function parseFlexibleDate(raw) {
+    if (raw === null || raw === undefined || raw === '') return null;
+    const s = String(raw).trim();
+
+    // ISO-like: leading YYYY-MM-DD
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return buildUtcDateOnly(Number(m[1]), Number(m[2]), Number(m[3]));
+
+    // US-like: MM/DD/YYYY
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return buildUtcDateOnly(Number(m[3]), Number(m[1]), Number(m[2]));
+
+    return null;
+}
+
+// Columns to try, in order, when deriving a row's reported_date.
+const ROW_DATE_FIELDS = ['TransactionDateLocal', 'TransactionDateTimeLocal', 'Time'];
+
+function parseRowDate(row) {
+    if (!row) return null;
+    for (const field of ROW_DATE_FIELDS) {
+        const d = parseFlexibleDate(row[field]);
+        if (d) return d;
+    }
+    return null;
+}
+
 module.exports = {
     EXPECTED_HEADERS,
     HEADER_MAP,
@@ -195,5 +260,8 @@ module.exports = {
     parseRows,
     mapRowToDocument,
     extractReportedDate,
+    hasDateRange,
+    parseRowDate,
+    parseFlexibleDate,
     deriveOta,
 };

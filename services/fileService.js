@@ -9,10 +9,12 @@ const {
     parseRows,
     mapRowToDocument,
     extractReportedDate,
+    hasDateRange,
+    parseRowDate,
 } = require('./qpExcelService');
 
 const BATCH_SIZE = 250;
-const PROGRESS_UPDATE_EVERY = 50;
+const PROGRESS_UPDATE_EVERY = 500;
 const MAX_PARSE_ERRORS = 200;
 
 function buildS3Key(userId, originalName) {
@@ -23,15 +25,23 @@ function buildS3Key(userId, originalName) {
 }
 
 async function uploadFile({ userId, file }) {
+    console.log(
+        `[upload] "${file.originalname}" — ${(file.size / 1024 / 1024).toFixed(2)} MB (${file.mimetype})`
+    );
+
     // Server-side header validation as a safety net even though the frontend pre-checks.
     const headerCheck = validateBuffer(file.buffer);
     if (!headerCheck.valid) {
+        console.warn(`[upload] header validation FAILED — missing: ${headerCheck.missing.join(', ')}`);
         const err = new Error(
             `Invalid QP report headers. Missing: ${headerCheck.missing.join(', ') || 'none'}`
         );
         err.statusCode = 400;
         err.details = headerCheck;
         throw err;
+    }
+    if (headerCheck.extra && headerCheck.extra.length) {
+        console.log(`[upload] ignoring unknown columns: ${headerCheck.extra.join(', ')}`);
     }
 
     const key = buildS3Key(userId, file.originalname);
@@ -40,8 +50,20 @@ async function uploadFile({ userId, file }) {
         key,
         contentType: file.mimetype,
     });
+    console.log(`[upload] stored at S3 key ${key}`);
 
-    const reported_date = extractReportedDate(file.originalname);
+    // Determine the file-level reported_date:
+    //  - single date in filename  → stamp every row with it
+    //  - date range / no date      → leave null; parser derives per-row dates
+    const isRange = hasDateRange(file.originalname);
+    const reported_date = isRange ? null : extractReportedDate(file.originalname);
+    if (isRange) {
+        console.log(`[upload] filename has a date RANGE — reported_date will be derived per-row at parse time`);
+    } else if (reported_date) {
+        console.log(`[upload] reported_date from filename: ${reported_date.toISOString().slice(0, 10)}`);
+    } else {
+        console.log(`[upload] no single date in filename — reported_date will be derived per-row at parse time`);
+    }
 
     const doc = await UploadedFile.create({
         original_name: file.originalname,
@@ -53,6 +75,7 @@ async function uploadFile({ userId, file }) {
         reported_date,
         status: 'uploaded',
     });
+    console.log(`[upload] created UploadedFile ${doc._id} (status: uploaded)`);
 
     return doc;
 }
@@ -126,17 +149,36 @@ async function startParse({ fileId }) {
 }
 
 async function runParse(fileId) {
+    const startedAt = Date.now();
     const file = await UploadedFile.findById(fileId);
-    if (!file) return;
+    if (!file) {
+        console.warn(`[parse] ${fileId} not found — aborting`);
+        return;
+    }
+    console.log(`[parse] ${fileId} "${file.original_name}" starting`);
 
     const buffer = await downloadBufferFromS3(file.s3_key);
+    console.log(`[parse] downloaded ${(buffer.length / 1024 / 1024).toFixed(2)} MB from S3`);
+
     const rows = parseRows(buffer);
+    console.log(`[parse] ${rows.length} rows to process`);
+
+    // When the file has no single reported_date (range filename, etc.) we
+    // derive each row's date from its transaction timestamp.
+    const deriveDates = file.reported_date == null;
+    if (deriveDates) {
+        console.log(`[parse] deriving reported_date per-row from transaction date`);
+    } else {
+        console.log(`[parse] stamping all rows with file reported_date ${file.reported_date.toISOString().slice(0, 10)}`);
+    }
 
     file.rows_total = rows.length;
     await file.save();
 
     let processed = 0;
     let failed = 0;
+    let datedFromRow = 0;
+    let undated = 0;
     const errors = [];
     let batch = [];
 
@@ -149,7 +191,17 @@ async function runParse(fileId) {
             doc.file_name = file.original_name;
             doc.file_url = file.s3_url;
             doc.row_number = rowNum;
-            doc.reported_date = file.reported_date;
+            if (deriveDates) {
+                const d = parseRowDate(row);
+                if (d) {
+                    doc.reported_date = d;
+                    datedFromRow++;
+                } else {
+                    undated++;
+                }
+            } else {
+                doc.reported_date = file.reported_date;
+            }
             batch.push(doc);
 
             if (batch.length >= BATCH_SIZE) {
@@ -170,6 +222,7 @@ async function runParse(fileId) {
                 rows_processed: processed,
                 rows_failed: failed,
             });
+            console.log(`[parse] ${processed}/${rows.length} (${failed} failed)`);
         }
     }
 
@@ -183,6 +236,12 @@ async function runParse(fileId) {
         parse_errors: errors,
         status: 'processed',
     });
+
+    const secs = ((Date.now() - startedAt) / 1000).toFixed(1);
+    console.log(`[parse] ${fileId} done — ${processed} processed, ${failed} failed in ${secs}s`);
+    if (deriveDates) {
+        console.log(`[parse] per-row dates: ${datedFromRow} derived, ${undated} undated`);
+    }
 }
 
 async function startDelete({ fileId }) {
